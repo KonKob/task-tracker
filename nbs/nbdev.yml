@@ -1,0 +1,9 @@
+project:
+  output-dir: _docs
+
+website:
+  title: "task-tracker"
+  site-url: "https://KonKob.github.io/task-tracker"
+  description: "A tool to track tasks, record audio and collect probands' demographics, designed to be used in a think-aloud approach"
+  repo-branch: main
+  repo-url: "https://github.com/KonKob/task-tracker"
