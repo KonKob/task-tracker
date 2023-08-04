@@ -13,10 +13,4 @@ pip install task_tracker
 
 ## How to use
 
-Fill me in please! Don’t forget code examples:
-
-``` python
-1+1
-```
-
-    2
+> Example on how to use task-tracker on a recipe.
