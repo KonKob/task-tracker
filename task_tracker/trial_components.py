@@ -268,7 +268,6 @@ class Pause():
 # %% ../nbs/01_trial_components.ipynb 8
 class Audio_Record():
     def __init__(self, trial, channels = 1, freq = 44100, duration = 10800):
-        import sounddevice as sd
         self.channels = channels
         self.freq = freq
         self.duration = duration
@@ -279,6 +278,7 @@ class Audio_Record():
     
     def start(self):
         if not self.running:
+            import sounddevice as sd
             self.start_time=round(time.time(), 4)
             self.recording = sd.rec(int(self.duration * self.freq), 
                        samplerate=self.freq, channels=self.channels)
@@ -287,6 +287,7 @@ class Audio_Record():
         
     def end(self):
         if self.running:
+            import sounddevice as sd
             self.end_time=round(time.time(), 4)
             sd.stop()
             real_duration = get_duration_in_s_from_timestamps(self.start_time, self.end_time)
