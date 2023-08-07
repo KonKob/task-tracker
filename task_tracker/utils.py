@@ -82,7 +82,7 @@ def create_cumulative_bar_plots(d, task_names, colors, bar_height = 1):
 
 # %% ../nbs/03_utils.ipynb 12
 def create_cumulative_tie_plots(d, task_names, colors, bar_height = 1):
-    artist_dict = {"Pause": None}
+    artist_dict = {}
 
     fig, ax = plt.subplots()
     pieces = {}
@@ -107,7 +107,7 @@ def create_cumulative_dataframe(d, task_names=None):
 
 # %% ../nbs/03_utils.ipynb 14
 def create_timeline(d, task_names, colors, bar_height = 1):
-    artist_dict = {"Pause": None}
+    artist_dict = {}
 
     fig, ax = plt.subplots()
     for task_number in d["task_number"].unique():

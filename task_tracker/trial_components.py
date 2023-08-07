@@ -12,7 +12,6 @@ from pathlib import Path
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-import sounddevice as sd
 from scipy.io.wavfile import write
 import numpy as np
 import speech_recognition as sr
@@ -269,6 +268,7 @@ class Pause():
 # %% ../nbs/01_trial_components.ipynb 8
 class Audio_Record():
     def __init__(self, trial, channels = 1, freq = 44100, duration = 10800):
+        import sounddevice as sd
         self.channels = channels
         self.freq = freq
         self.duration = duration

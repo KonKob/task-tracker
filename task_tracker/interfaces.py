@@ -54,7 +54,8 @@ class Main_Interface():
             print("You didn't select a task!")
     
     def _on_update_status_button_clicked(self, b):
-        fig = create_timeline(d=self.trial.history.export_tasks(self.trial.start_time))
+        d = self.trial.history.export_tasks(self.trial.start_time)
+        fig = create_timeline(d=d, task_names = d["task_name"].unique(), colors = self.trial.colors)
         filename = self.trial.out_dir.joinpath(f"{time.strftime('%Y-%m-%d_%H.%M.%S', time.gmtime())}_timeline.png")
         fig.savefig(filename)
         file = open(filename, "rb")
@@ -214,16 +215,27 @@ class Proband_Interface():
 class Sub_Interface():
     
     def __init__(self, tasks: List, trial: Trial, lane = "Tasks"):
+        self.trial = trial
+        self.n_in_one_row = 5
         self.buttons = self._create_task_buttons(tasks)
         self.pause_button = self._create_pause_button()
         self.lane = lane
         self.new_text = self._create_new_task_text()
-        self.interface = widgets.VBox([widgets.HBox(list(self.buttons.values())), self.new_text, self.pause_button])
-        self.trial = trial
+        self.interface = self._create_interface(self.buttons, self.new_text, self.pause_button)
         self.trial.history.current_tasks[self.lane] = None
         
+    def _create_interface(self, buttons, text, pause):
+        tasks_vbox = self._arrange_widgets(list(self.buttons.values()), self.n_in_one_row)
+        return widgets.VBox([tasks_vbox, text, pause])
+        
+    def _arrange_widgets(self, widget_list, n_in_one_row):
+        hbox_elements = []
+        for i in range(1, len(widget_list)//n_in_one_row+2):
+            hbox_elements.append(widgets.HBox(widget_list[(n_in_one_row*(i-1)):(n_in_one_row*i)]))
+        return widgets.VBox(hbox_elements)
+        
     def _create_task_buttons(self, tasks):
-        layout = widgets.Layout(width=f"{100/len(tasks)}%", height="100px")
+        layout = widgets.Layout(width=f"{100/self.n_in_one_row}%", height="100px")
         task_buttons = {task: widgets.Button(description = task, layout=layout, style={"font_size": "15px"}) for task in tasks}
         for button in task_buttons.values():
             button.on_click(self._on_task_button_clicked)
