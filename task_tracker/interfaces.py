@@ -17,7 +17,10 @@ from .utils import create_timeline
 
 # %% ../nbs/02_interfaces.ipynb 4
 class Main_Interface():
-     
+    """
+    The main interface, with which the user interacts.
+    Contains a landing page, several `Sub_Interface`objects and the `Proband_Interface`.
+    """
     def __init__(self, trial):
         self.all_paused = False
         self.trial = trial
@@ -192,7 +195,10 @@ class Main_Interface():
 
 # %% ../nbs/02_interfaces.ipynb 5
 class Proband_Interface():
-    
+    """
+    Interface to acquire metadata related to the proband.
+    The metadata can be saved to the `Proband` object.
+    """
     def __init__(self, demographics, n_in_one_row = 4):
         self.widget_dict = self._create_demographics(demographics)
         self.interface = self._arrange_widgets(self.widget_dict, n_in_one_row)
@@ -213,7 +219,9 @@ class Proband_Interface():
 
 # %% ../nbs/02_interfaces.ipynb 6
 class Sub_Interface():
-    
+    """
+    Interface to record `Task`-objects. Corresponds to one Tab in `Main_Interface`.
+    """
     def __init__(self, tasks: List, trial: Trial, lane = "Tasks"):
         self.trial = trial
         self.n_in_one_row = 5

@@ -28,7 +28,7 @@ def save_trial(trial):
     with open(trial.out_dir.joinpath("trial.p"), 'wb') as file:
         pickle.dump(pickled_trial, file)
 
-# %% ../nbs/00_utils.ipynb 6
+# %% ../nbs/00_utils.ipynb 5
 def load_trial(tasks_dir):
     """
     Loads a `Trial`, that was saved as a pickle file before using `save_trial` and returns it.
@@ -44,7 +44,7 @@ def load_trial(tasks_dir):
         raise FileNotFoundError("No pickle file found in this directory!")
     return loaded_trial
 
-# %% ../nbs/00_utils.ipynb 8
+# %% ../nbs/00_utils.ipynb 6
 def transcribe_audio_to_task(task, r, file, trial):
     duration = get_duration_in_s_from_timestamps(task.start_time, task.end_time)
     with file as source:
@@ -57,13 +57,13 @@ def transcribe_audio_to_task(task, r, file, trial):
         description = []
     task.add_description(description)
 
-# %% ../nbs/00_utils.ipynb 9
+# %% ../nbs/00_utils.ipynb 7
 def get_duration_in_s_from_timestamps(start_time_stamp, end_time_stamp=None):
     if end_time_stamp is None:
         end_time_stamp = round(time.time(), 4)
     return datetime.timedelta(seconds=end_time_stamp-start_time_stamp).total_seconds()
 
-# %% ../nbs/00_utils.ipynb 10
+# %% ../nbs/00_utils.ipynb 8
 def get_colors(task_names: List, palette_name="colorblind") -> Dict:
     """
     Assigns a unique color to all tasks in task_names from the seaborn 
@@ -75,7 +75,7 @@ def get_colors(task_names: List, palette_name="colorblind") -> Dict:
     colors = {name : color for name, color in zip(task_names, cmap)}
     return colors
 
-# %% ../nbs/00_utils.ipynb 12
+# %% ../nbs/00_utils.ipynb 9
 def create_cumulative_bar_plots(d, task_names, colors, bar_height = 1):
     artist_dict = {"Pause": None}
     
@@ -91,7 +91,7 @@ def create_cumulative_bar_plots(d, task_names, colors, bar_height = 1):
     plt.close()
     return fig
 
-# %% ../nbs/00_utils.ipynb 13
+# %% ../nbs/00_utils.ipynb 10
 def create_cumulative_tie_plots(d, task_names, colors, bar_height = 1):
     artist_dict = {}
 
@@ -105,7 +105,7 @@ def create_cumulative_tie_plots(d, task_names, colors, bar_height = 1):
     plt.close()
     return fig
 
-# %% ../nbs/00_utils.ipynb 14
+# %% ../nbs/00_utils.ipynb 11
 def create_cumulative_dataframe(d, task_names=None):
     pieces = {}
     task_names = d["task_name"].unique()
@@ -116,7 +116,7 @@ def create_cumulative_dataframe(d, task_names=None):
             pieces[task] = task_subset.sum()["duration_in_s"]
     return pd.DataFrame(pieces, index=["cumulative time [s]"])
 
-# %% ../nbs/00_utils.ipynb 15
+# %% ../nbs/00_utils.ipynb 12
 def create_timeline(d, task_names, colors, bar_height = 1):
     artist_dict = {}
 
@@ -139,7 +139,7 @@ def create_timeline(d, task_names, colors, bar_height = 1):
     plt.close()
     return fig
 
-# %% ../nbs/00_utils.ipynb 16
+# %% ../nbs/00_utils.ipynb 13
 def create_cumulative_pie_plots_per_lane(dataframe_per_subtasks):
     cols, rows = get_number_of_columns(len(dataframe_per_subtasks.columns))
     fig = plt.figure(figsize = (rows*6, 4*cols))
@@ -160,7 +160,7 @@ def create_cumulative_pie_plots_per_lane(dataframe_per_subtasks):
     plt.close()
     return fig
 
-# %% ../nbs/00_utils.ipynb 17
+# %% ../nbs/00_utils.ipynb 14
 def create_cumulative_bar_plots_per_lane(dataframe_per_subtasks):
     cols, rows = get_number_of_columns(len(dataframe_per_subtasks.columns))
     
@@ -181,7 +181,7 @@ def create_cumulative_bar_plots_per_lane(dataframe_per_subtasks):
     plt.close()
     return fig
 
-# %% ../nbs/00_utils.ipynb 18
+# %% ../nbs/00_utils.ipynb 15
 def get_number_of_columns(columns, plots_in_one_row = 4):
     min_cols = columns//plots_in_one_row
     if columns%plots_in_one_row != 0:

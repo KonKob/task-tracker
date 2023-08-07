@@ -20,7 +20,9 @@ from .utils import get_duration_in_s_from_timestamps, transcribe_audio_to_task, 
 
 # %% ../nbs/01_trial_components.ipynb 4
 class Proband():
-    
+    """
+    Stores metadata associated with the proband.
+    """
     def __init__(self, proband_ID):
         self.metadata = {}
         self.proband_ID = proband_ID
@@ -30,7 +32,12 @@ class Proband():
 
 # %% ../nbs/01_trial_components.ipynb 5
 class Trial():
-    
+    """
+    The main class used by task_tracker.
+    `Proband`, `Task_History`, `Audio_Record` objects are stored here. 
+    Metadata such as user_ID, start_ and end_time are stored here.
+    `Main_Interface` writes acquired information directly to this object.
+    """
     def __init__(self, user_ID, task_dict, demographic_dict, target_dir = None, proband_ID = None, colors = None):
         self.task_dict = task_dict
         self.demographic_dict = demographic_dict
@@ -65,6 +72,9 @@ class Trial():
         save_trial(self)
         
     def export_results(self):
+        """
+        Wrapper function. Executes all export options.
+        """
         self.export_tasks()
         self.export_tasks_per_subtasks()
         self.export_proband_information()
@@ -73,7 +83,10 @@ class Trial():
         
         return self.tasks_dataframe, self.cum_d, self.dataframe_per_subtasks, self.plots, self.subtask_plots, self.metadata_df
         
-    def export_tasks(self):       
+    def export_tasks(self):
+        """
+        Creates the dataframe with information per single task, the full cumulative dataframe and the timeline and the full cumulative plots and timeline.
+        """
         self._postprocess_tasks_and_descriptions()
         self.tasks_dataframe = self.history.export_tasks(self.start_time)
         self.tasks_dataframe.to_excel(self.out_dir.joinpath(f"{time.strftime('%Y-%m-%d_%H.%M.%S', self.end_struct_time)}_tasks.xlsx"))
@@ -100,6 +113,9 @@ class Trial():
         return self.plots, self.tasks_dataframe, self.cum_d
     
     def export_proband_information(self):
+        """
+        Creates the dataframe with the proband metadata.
+        """
         self.metadata_df = pd.DataFrame(self.proband.metadata, columns=self.proband.metadata.keys(), index=[self.proband.proband_ID])
         self.metadata_df.to_excel(self.out_dir.joinpath(f"{time.strftime('%Y-%m-%d_%H.%M.%S', self.end_struct_time)}_proband_metadata.xlsx"))
         
@@ -108,6 +124,9 @@ class Trial():
         return self.metadata_df
         
     def export_tasks_per_subtasks(self):
+        """
+        Creates dataframe and plots for subtasks per tasks.
+        """
         tasks = {}
         for lane in self.history.tasks:
             for task in self.history.tasks[lane]:
@@ -169,7 +188,11 @@ class Trial():
 
 # %% ../nbs/01_trial_components.ipynb 6
 class Task():
-    
+    """
+    The syllables of task_tracker.
+    Start-, end- time and `Pause` objects are stored here. Descriptions can be added to this object.
+    The duration can be calculated substracting the breaks.
+    """
     def __init__(self, task_number, task_name, lane):
         self.task_name = task_name
         self.task_number = task_number
@@ -235,7 +258,10 @@ class Task():
 
 # %% ../nbs/01_trial_components.ipynb 7
 class Pause():
-    
+    """
+    Stores start- and end- time. 
+    The duration can be calculated substracting the breaks.
+    """
     def __init__(self, task_number, task_name="Pause", lane="Tasks"):
         self.task_name = task_name
         self.task_number = task_number
@@ -267,6 +293,12 @@ class Pause():
 
 # %% ../nbs/01_trial_components.ipynb 8
 class Audio_Record():
+    """
+    Audio is recorded via this class.
+    The interaction with sounddevice is performed here.
+    Per default, the recording can last no longer than 3 hours. 
+    However, the duration can be set individually.
+    """
     def __init__(self, trial, channels = 1, freq = 44100, duration = 10800):
         self.channels = channels
         self.freq = freq
@@ -298,7 +330,10 @@ class Audio_Record():
 
 # %% ../nbs/01_trial_components.ipynb 9
 class Task_History():
-    
+    """
+    The tasks are stored here. 
+    They can be exported as dataframe via `Task_History.export_tasks`.
+    """
     def __init__(self, task_dict):
         self.tasks = self._create_tasks_dict(task_dict)
         self.current_tasks = {}
@@ -311,6 +346,9 @@ class Task_History():
         self.tasks["Pause"].append(pause)
         
     def export_tasks(self, time_zero = None):
+        """
+        Creates a dataframe from all stored tasks.
+        """
         self.dataframe = pd.DataFrame()
         tasks = []
         for lane in self.tasks:
