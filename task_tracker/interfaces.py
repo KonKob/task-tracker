@@ -247,10 +247,10 @@ class Sub_Interface():
         task_buttons = {task: widgets.Button(description = task, layout=layout, style={"font_size": "15px"}) for task in tasks}
         for button in task_buttons.values():
             button.on_click(self._on_task_button_clicked)
-        task_buttons["Sonstige"] = widgets.Button(description = "Sonstige", layout=layout, style={"font_size": "15px"})
+        task_buttons["Sonstige"] = widgets.Button(description = "Other", layout=layout, style={"font_size": "15px"})
         task_buttons["Sonstige"].on_click(self._on_new_task_button_clicked)
         task_buttons["Sonstige"].style.button_color = "darkgray"
-        task_buttons["Keine neue Aufgabe"] = widgets.Button(description = "Keine neue Aufgabe", layout=layout, icon = "circle", style={"font_size": "15px"})
+        task_buttons["Keine neue Aufgabe"] = widgets.Button(description = "No task running", layout=layout, icon = "circle", style={"font_size": "15px"})
         task_buttons["Keine neue Aufgabe"].style.button_color = "firebrick"
         task_buttons["Keine neue Aufgabe"].on_click(self._on_end_task_no_new_task_button_clicked)
         return task_buttons
@@ -268,7 +268,7 @@ class Sub_Interface():
         
     def _create_new_task_text(self):
         layout = widgets.Layout(width="100%", height="100px")
-        t = widgets.Text("Sonstige", layout=layout)
+        t = widgets.Text("Other", layout=layout)
         t.style.background = "darkgrey"
         return t
     

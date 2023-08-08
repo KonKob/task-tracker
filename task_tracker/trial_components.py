@@ -38,7 +38,8 @@ class Trial():
     Metadata such as user_ID, start_ and end_time are stored here.
     `Main_Interface` writes acquired information directly to this object.
     """
-    def __init__(self, user_ID, task_dict, demographic_dict, target_dir = None, proband_ID = None, colors = None):
+    def __init__(self, user_ID, task_dict, demographic_dict, target_dir = None, proband_ID = None, colors = None, language="de-DE"):
+        self.language = language
         self.task_dict = task_dict
         self.demographic_dict = demographic_dict
         self.user_ID = user_ID
@@ -184,7 +185,7 @@ class Trial():
         for lane in self.history.tasks:
             for task in self.history.tasks[lane]:
                 if type(task)==Task:
-                    transcribe_audio_to_task(task, r, file, self)
+                    transcribe_audio_to_task(task, r, file, self, self.language)
 
 # %% ../nbs/01_trial_components.ipynb 6
 class Task():

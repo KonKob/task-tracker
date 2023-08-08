@@ -45,14 +45,14 @@ def load_trial(tasks_dir):
     return loaded_trial
 
 # %% ../nbs/00_utils.ipynb 6
-def transcribe_audio_to_task(task, r, file, trial):
+def transcribe_audio_to_task(task, r, file, trial, language):
     duration = get_duration_in_s_from_timestamps(task.start_time, task.end_time)
     with file as source:
         start = get_duration_in_s_from_timestamps(trial.start_time, task.start_time)
         r.adjust_for_ambient_noise(source, duration=0.5)
         audio = r.record(source, offset=start, duration=duration)
     try:
-        description = r.recognize_google(audio, language="de-DE")
+        description = r.recognize_google(audio, language=language)
     except sr.UnknownValueError:
         description = []
     task.add_description(description)
