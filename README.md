@@ -20,12 +20,12 @@ pip install task_tracker
 
 > **Note**
 >
-> You can find the notebook and the results of the `lasagne recipe`
-> [here](%22https://github.com/KonKob/task-tracker/tree/main/test_data%22).
+> You can find the notebook and the results of the `lasagne recipe` at
+> <https://github.com/KonKob/task-tracker/blob/main/test_data>.
 
 </div>
 
-
+------------------------------------------------------------------------
 
 ### This is how the landing page looks like after completing a trial:
 
@@ -67,7 +67,7 @@ page](https://github.com/KonKob/task-tracker/blob/main/media/task_page.png?raw=t
 
 - To pause a task, just hit `Start pause`.
 
-
+------------------------------------------------------------------------
 
 ### Exporting the results creates excel files.
 
@@ -104,10 +104,10 @@ trial.tasks_dataframe.head()
 
 #### The cumulative duration spent in certain tasks can be shown as bar and tie plots.
 
-![cumulative duration in
-tasks](https://github.com/KonKob/task-tracker/blob/main/test_data/2023-08-07_17.43.23_0000_Chef/2023-08-07_17.47.39_cumulative_tie_plots.png?raw=true)
+![cumulative duration of tasks in
+trial](https://github.com/KonKob/task-tracker/blob/main/test_data/2023-08-07_17.43.23_0000_Chef/2023-08-07_17.47.39_cumulative_tie_plots.png?raw=true)
 
 #### It can also be shown, how much time was spent in tasks running in parallel to other tasks.
 
-![bar
-plot](https://github.com/KonKob/task-tracker/blob/main/test_data/2023-08-07_17.43.23_0000_Chef/2023-08-07_17.47.39_pie_plots_per_lane.png?raw=true)
+![tie plot per
+task](https://github.com/KonKob/task-tracker/blob/main/test_data/2023-08-07_17.43.23_0000_Chef/2023-08-07_17.47.39_pie_plots_per_lane.png?raw=true)
