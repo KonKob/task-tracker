@@ -38,7 +38,7 @@ class Trial():
     Metadata such as user_ID, start_ and end_time are stored here.
     `Main_Interface` writes acquired information directly to this object.
     """
-    def __init__(self, user_ID, task_dict, demographic_dict, target_dir = None, proband_ID = None, colors = None, language="de-DE"):
+    def __init__(self, user_ID, task_dict, demographic_dict, target_dir = None, proband_ID = None, colors = None, language="german", descriptions_preset=[]):
         self.language = language
         self.task_dict = task_dict
         self.demographic_dict = demographic_dict
@@ -48,6 +48,7 @@ class Trial():
         self.out_dir = None
         self.started = False
         self.colors = colors
+        self.descriptions_preset = descriptions_preset
         if target_dir is None or not target_dir.exists():
             self.target_dir = Path.cwd()
         else:
@@ -89,7 +90,7 @@ class Trial():
         Creates the dataframe with information per single task, the full cumulative dataframe and the timeline and the full cumulative plots and timeline.
         """
         self._postprocess_tasks_and_descriptions()
-        self.tasks_dataframe = self.history.export_tasks(self.start_time)
+        self.tasks_dataframe = self.history.export_tasks()
         self.tasks_dataframe.to_excel(self.out_dir.joinpath(f"{time.strftime('%Y-%m-%d_%H.%M.%S', self.end_struct_time)}_tasks.xlsx"))
 
         task_names = self.tasks_dataframe["task_name"].unique()
@@ -179,13 +180,15 @@ class Trial():
         return proband_ID
         
     def _postprocess_tasks_and_descriptions(self):
-        r = sr.Recognizer()
-        file = sr.AudioFile(self.audio_record.filename)
+        self.audio_record.transcribe_audio()
 
         for lane in self.history.tasks:
             for task in self.history.tasks[lane]:
                 if type(task)==Task:
-                    transcribe_audio_to_task(task, r, file, self, self.language)
+                    for segment in self.audio_record.transcription["segments"]:
+                        if (segment["start"] > task.start_time and segment["start"] < task.end_time) or (segment["start"] < task.start_time and segment["end"] > task.start_time):
+                            task.add_description(segment["text"], segment["start"])
+                    
 
 # %% ../nbs/01_trial_components.ipynb 6
 class Task():
@@ -194,34 +197,35 @@ class Task():
     Start-, end- time and `Pause` objects are stored here. Descriptions can be added to this object.
     The duration can be calculated substracting the breaks.
     """
-    def __init__(self, task_number, task_name, lane):
+    def __init__(self, task_number, task_name, lane, trial_start_time):
         self.task_name = task_name
         self.task_number = task_number
         self.lane = lane
         self.start_time = None
+        self.trial_start_time = trial_start_time
         self.end_time = None
         self.paused = False
         self.running = False
         self.currently_paused = False
         self.pauses = []
         self.pause = None
-        self.description = []
+        self.description = {}
     
     def start(self):
         if not self.running:
             self.running = True
-            self.start_time = round(time.time(), 4)
+            self.start_time = round(time.time(), 4)-self.trial_start_time
     
     def pause_start(self):
         if not self.currently_paused:
             self.paused = True
             self.currently_paused = True
-            self.pause = Pause(self.task_number, lane=self.lane)
+            self.pause = Pause(self.task_number, lane=self.lane, trial_start_time=self.trial_start_time)
             self.pause.start()
     
     def end(self):
         if self.running:
-            self.end_time = round(time.time(), 4)
+            self.end_time = round(time.time(), 4)-self.trial_start_time
             self.pause_end()
             self.running = False
             self.duration_in_s = self.calculate_duration()
@@ -253,9 +257,8 @@ class Task():
             self.pauses.append(self.pause)
             self.pause = None
             
-    def add_description(self, description):
-        if description:
-            self.description.append(description)
+    def add_description(self, description, start_time):
+        self.description[start_time] = description
 
 # %% ../nbs/01_trial_components.ipynb 7
 class Pause():
@@ -263,19 +266,20 @@ class Pause():
     Stores start- and end- time. 
     The duration can be calculated substracting the breaks.
     """
-    def __init__(self, task_number, task_name="Pause", lane="Tasks"):
+    def __init__(self, task_number, task_name="Pause", lane="Tasks", trial_start_time=0):
         self.task_name = task_name
         self.task_number = task_number
         self.start_time = None
+        self.trial_start_time = trial_start_time
         self.end_time = None
         self.lane = lane
         self.description = []
     
     def start(self):
-        self.start_time = round(time.time(), 4)
+        self.start_time = round(time.time(), 4)-self.trial_start_time
     
     def end(self):
-        self.end_time = round(time.time(), 4)
+        self.end_time = round(time.time(), 4)-self.trial_start_time
         self.duration_in_s = self.calculate_duration()
         
     def calculate_duration(self, start_time=None, end_time=None):
@@ -328,6 +332,14 @@ class Audio_Record():
             y = (np.iinfo(np.int32).max * (self.recording/np.abs(self.recording).max())).astype(np.int32)
             write(self.filename, self.freq, y)
             self.running = False
+            
+    def transcribe_audio(self):
+        r = sr.Recognizer()
+        file = sr.AudioFile(self.filename)
+        with file as source:
+            audio = r.record(source)
+        self.transcription = r.recognize_whisper(audio, show_dict=True, language=self.trial.language)
+        return self.transcription
 
 # %% ../nbs/01_trial_components.ipynb 9
 class Task_History():
@@ -346,7 +358,7 @@ class Task_History():
     def add_pause(self, pause):
         self.tasks["Pause"].append(pause)
         
-    def export_tasks(self, time_zero = None):
+    def export_tasks(self):
         """
         Creates a dataframe from all stored tasks.
         """
@@ -358,16 +370,12 @@ class Task_History():
         self.dataframe["duration_in_s"] = [task.duration_in_s for task in tasks]
         self.dataframe["task_number"] = [task.task_number for task in tasks]
         self.dataframe["task_name"] = [task.task_name for task in tasks]
-        if time_zero is None:
-            self.dataframe["start_time"] = [task.start_time for task in tasks]
-            self.dataframe["end_time"] = [task.end_time for task in tasks]
-        else:
-            self.dataframe["start_time"] = [task.start_time-time_zero for task in tasks]
-            self.dataframe["end_time"] = [task.end_time-time_zero for task in tasks]
+        self.dataframe["start_time"] = [task.start_time for task in tasks]
+        self.dataframe["end_time"] = [task.end_time for task in tasks]
         for lane in self.tasks:
             for task in self.tasks[lane]:
-                for i, description in enumerate(task.description):
-                    self.dataframe.loc[self.dataframe["task_number"]==task.task_number, f"description_{i}"] = description
+                for i, start_time in enumerate(task.description):
+                    self.dataframe.loc[self.dataframe["task_number"]==task.task_number, f"description_{i}"] = str(round(start_time, 1)) + " " + task.description[start_time]
         return self.dataframe
     
     

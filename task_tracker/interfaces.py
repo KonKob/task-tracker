@@ -29,9 +29,9 @@ class Main_Interface():
         self.proband_interface = self._create_proband_interface(trial.demographic_dict)
         export_proband_button = self._create_proband_export_button()
         start_trial_button = self._create_start_trial_button()
-        self.description_task_dropdown, add_description_button, self.description_field = self._create_description_widgets()
+        self.description_task_dropdown, add_description_button, self.description_field, self.descriptions_dropdown = self._create_description_widgets(trial.descriptions_preset)
         self.current_status, self.graphical_output, update_status = self._create_trial_overview()
-        self.main_interface = self._create_main_interface(self.pause_button, export_proband_button, start_trial_button, self.description_task_dropdown, add_description_button, self.description_field, self.current_status, self.graphical_output, update_status)
+        self.main_interface = self._create_main_interface(self.pause_button, export_proband_button, start_trial_button, self.description_task_dropdown, add_description_button, self.description_field, self.descriptions_dropdown, self.current_status, self.graphical_output, update_status)
         self.gui = self._merge_interfaces_into_gui(self.interfaces, self.main_interface, self.proband_interface)
         self.all_children = self.gui.children
         self.all_titles = self.gui.titles
@@ -47,17 +47,19 @@ class Main_Interface():
             for task in self.trial.history.current_tasks.values():
                 if task is not None:
                     if task.task_number == int(task_number):
-                        task.add_description(self.description_field.value)
+                        task.add_description(self.description_field.value + self.descriptions_dropdown.value, round(time.time(), 4)-self.trial.start_time)
             for lane in self.trial.history.tasks:
                 for task in self.trial.history.tasks[lane]:
                     if task is not None:
                         if task.task_number == int(task_number):
-                            task.add_description(self.description_field.value)
+                            task.add_description(self.description_field.value + self.descriptions_dropdown.value, round(time.time(), 4)-self.trial.start_time)
+            self.description_field.value = ""
+            self.descriptions_dropdown.value = ""
         else:
             print("You didn't select a task!")
     
     def _on_update_status_button_clicked(self, b):
-        d = self.trial.history.export_tasks(self.trial.start_time)
+        d = self.trial.history.export_tasks()
         fig = create_timeline(d=d, task_names = d["task_name"].unique(), colors = self.trial.colors)
         filename = self.trial.out_dir.joinpath(f"{time.strftime('%Y-%m-%d_%H.%M.%S', time.gmtime())}_timeline.png")
         fig.savefig(filename)
@@ -75,7 +77,7 @@ class Main_Interface():
         update_button.on_click(self._on_update_status_button_clicked)
         return current_status, graphical_output, update_button  
         
-    def _create_description_widgets(self):
+    def _create_description_widgets(self, descriptions_preset):
         description_task_dropdown = widgets.Dropdown(description="Select task", style = {'description_width': 'initial'})
         layout = widgets.Layout(width="100%", height="100px")
         add_description_button = widgets.Button(description="Add description to selected task!", layout = layout, icon = "plus", style={"font_size": "15px"})
@@ -83,7 +85,8 @@ class Main_Interface():
         description_field = widgets.Textarea(description="Enter description here!", style = {'description_width': 'initial'})
         description_field.layout.width = "100%"
         description_field.layout.height = "275px"
-        return description_task_dropdown, add_description_button, description_field
+        descriptions_dropdown = widgets.Dropdown(description="Select description", options = [""] + descriptions_preset, style = {'description_width': 'initial'})
+        return description_task_dropdown, add_description_button, description_field, descriptions_dropdown
         
     def _create_start_trial_button(self):
         layout = widgets.Layout(width="100%", height="100px")
@@ -136,10 +139,10 @@ class Main_Interface():
             interfaces = {task: Sub_Interface(tasks[task], self.trial, lane=task) for task in tasks}
         return interfaces
     
-    def _create_main_interface(self, pause_button, export_proband_button, start_trial_button, description_task_dropdown, add_description_button, description_field, current_status, graphical_output, update_status):
+    def _create_main_interface(self, pause_button, export_proband_button, start_trial_button, description_task_dropdown, add_description_button, description_field, descriptions_dropdown, current_status, graphical_output, update_status):
         status = widgets.VBox([current_status, graphical_output, update_status], layout=widgets.Layout(width="50%", height="100%", border='solid thin', margin="5px", align_items = "center"))
         buttons = widgets.VBox([pause_button, export_proband_button, start_trial_button], layout=widgets.Layout(width="25%", height="100%", border='solid thin', margin="5px", align_items = "center"))
-        descriptions = widgets.VBox([description_task_dropdown, description_field, add_description_button], layout=widgets.Layout(width="25%", height="100%", border='solid thin', margin="5px", align_items = "center"))
+        descriptions = widgets.VBox([description_task_dropdown, description_field, descriptions_dropdown, add_description_button], layout=widgets.Layout(width="25%", height="100%", border='solid thin', margin="5px", align_items = "center"))
         return widgets.HBox([buttons, descriptions, status])
     
     def _merge_interfaces_into_gui(self, interfaces, main_interface, proband_interface):
@@ -312,6 +315,6 @@ class Sub_Interface():
                 for pause in self.trial.history.current_tasks[self.lane].pauses:
                     self.trial.history.add_pause(pause)
         b.icon = "circle"
-        self.trial.history.current_tasks[self.lane] = Task(task_number=self.trial.task_number, task_name = b.description, lane = self.lane)
+        self.trial.history.current_tasks[self.lane] = Task(task_number=self.trial.task_number, task_name = b.description, lane = self.lane, trial_start_time=self.trial.start_time)
         self.trial.history.current_tasks[self.lane].start()
         self.trial.task_number +=1
