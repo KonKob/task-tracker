@@ -11,6 +11,7 @@ from typing import List
 from pathlib import Path
 
 import ipywidgets as widgets
+import seaborn as sns
 
 from .trial_components import Trial, Task
 from .utils import create_timeline
@@ -60,6 +61,12 @@ class Main_Interface():
     
     def _on_update_status_button_clicked(self, b):
         d = self.trial.history.export_tasks()
+        
+        task_names = d["task_name"].unique()
+        for task_name in task_names:
+            if task_name not in self.trial.colors:
+                self.trial.colors[task_name] = sns.colors.xkcd_rgb["black"]
+                
         fig = create_timeline(d=d, task_names = d["task_name"].unique(), colors = self.trial.colors)
         filename = self.trial.out_dir.joinpath(f"{time.strftime('%Y-%m-%d_%H.%M.%S', time.gmtime())}_timeline.png")
         fig.savefig(filename)

@@ -38,9 +38,10 @@ class Trial():
     Metadata such as user_ID, start_ and end_time are stored here.
     `Main_Interface` writes acquired information directly to this object.
     """
-    def __init__(self, user_ID, task_dict, demographic_dict, target_dir = None, proband_ID = None, colors = None, language="german", descriptions_preset=[]):
+    def __init__(self, user_ID, task_dict, demographic_dict, target_dir = None, proband_ID = None, colors = None, language="german", model="medium", descriptions_preset=[]):
         self.language = language
         self.task_dict = task_dict
+        self.model = model
         self.demographic_dict = demographic_dict
         self.user_ID = user_ID
         self.task_number = 0
@@ -338,7 +339,7 @@ class Audio_Record():
         file = sr.AudioFile(self.filename)
         with file as source:
             audio = r.record(source)
-        self.transcription = r.recognize_whisper(audio, show_dict=True, language=self.trial.language)
+        self.transcription = r.recognize_whisper(audio, show_dict=True, language=self.trial.language, model=self.trial.model)
         return self.transcription
 
 # %% ../nbs/01_trial_components.ipynb 9
