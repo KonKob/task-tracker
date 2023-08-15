@@ -25,23 +25,35 @@ def save_trial(trial):
     Saves a pickle file in the root dir of a `Trial`. This file can be loaded using `load_trial`.
     """
     pickled_trial = pickle.dumps(trial)
-    with open(trial.out_dir.joinpath("trial.p"), 'wb') as file:
+    with open(trial.out_dir.joinpath(f"{time.strftime('%Y-%m-%d_%H.%M.%S', time.gmtime())}.p"), 'wb') as file:
         pickle.dump(pickled_trial, file)
 
 # %% ../nbs/00_utils.ipynb 5
-def load_trial(tasks_dir):
+def load_trial(tasks_dir, saved_file=None):
     """
     Loads a `Trial`, that was saved as a pickle file before using `save_trial` and returns it.
     Requires the trials' root_dir as argument.
     """
     loaded_trial = None
-    for file in Path(tasks_dir).iterdir():
-        if file.suffix == ".p":
-            with open(file, 'rb') as pickled_file:
+    if saved_file is None:
+        pickle_files = []
+        for file in Path(tasks_dir).iterdir():
+            if file.suffix == ".p":
+                pickle_files.append(file)
+        if not pickle_files:
+            raise FileNotFoundError("No pickle file found in this directory!")
+        else:
+            pickle_files.sort()
+            with open(pickle_files[0], 'rb') as pickled_file:
                 loaded_pickled_trial = pickle.load(pickled_file)
             loaded_trial = pickle.loads(loaded_pickled_trial)
-    if loaded_trial is None:
-        raise FileNotFoundError("No pickle file found in this directory!")
+    else:
+        if Path(saved_file).exists():
+            with open(saved_file, 'rb') as pickled_file:
+                loaded_pickled_trial = pickle.load(pickled_file)
+            loaded_trial = pickle.loads(loaded_pickled_trial)
+        else:
+            raise FileNotFoundError("File not found!")
     return loaded_trial
 
 # %% ../nbs/00_utils.ipynb 6
