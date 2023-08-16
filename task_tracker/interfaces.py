@@ -333,10 +333,18 @@ class Correct_Transcription_Interface():
     Interface to easily check and correct audio transcriptions.
     """
     
-    def __init__(self, trial):
+    def __init__(self, trial, coding_categories = []):
         self.trial = trial
         samplerate, array = read(trial.audio_record.filename)
+        self.coding_categories = ["Nicht ausgewählt"] + coding_categories
         self.segments = [Segment(start_time=segment["start"], end_time=segment["end"], text=segment["text"], ide=segment["id"], array_slice=array[int(segment["start"]*samplerate) : int(segment["end"]*samplerate)], tasks=trial.history.tasks, trial=self.trial) for segment in trial.audio_record.transcription["segments"]]
+        added_descriptions = [segment.text for segment in self.segments]
+        for lane in trial.history.tasks:
+            for task in trial.history.tasks[lane]:
+                for start_time in task.description:
+                    if task.description[start_time] not in self.trial.audio_record.transcription and task.description[start_time] not in added_descriptions:
+                        self.segments.append(Segment(start_time=start_time, end_time=start_time, text=task.description[start_time], ide="manuell", array_slice=[], tasks=trial.history.tasks, trial=self.trial))
+                        added_descriptions.append(task.description[start_time])
         self.i = 0
         self.description_i = 0
         self.update_current_segment()
@@ -358,17 +366,21 @@ class Correct_Transcription_Interface():
         prev_description_button.on_click(self._on_prev_description_button_clicked)
         save_button = widgets.Button(description="Save trial", icon="download", layout=layout, style={"font_size": "25px"})
         save_button.on_click(self._on_save_button_clicked)
+        self.category_dropdown = widgets.Dropdown(options=self.coding_categories, description = "Select Coding Categorie", style = {'description_width': 'initial'}, layout = widgets.Layout(width="100%", height="30px"))
+        self.category_text = widgets.Text(description = "New category", style = {'description_width': 'initial'}, layout = widgets.Layout(width="100%", height="30px"))
         self.new_text_field = widgets.Textarea(description="Enter new text here:", value=self.current_segment.text, style = {'description_width': 'initial', "font_size": "25px"})
         self.new_text_field.layout.width = "100%"
-        self.new_text_field.layout.height = "275px"
+        self.new_text_field.layout.height = "150px"
         self.description = widgets.Label(f"Start time: {self.current_segment.start_time} ID: {self.current_segment.id} / {len(self.segments)-1}", style = {'description_width': 'initial', "font_size": "25px"})
         self.previous_next_segment = widgets.Label(f"ID {self.i+1}: {self.segments[self.i+1].text}", style = {'description_width': 'initial'})
         
-        return widgets.VBox([widgets.HBox([self.previous_next_segment, prev_description_button, next_description_button]), self.description, self.new_text_field, widgets.HBox([go_back_button, delete_button, set_new_text_button, play_audio_button]), save_button])
+        return widgets.VBox([widgets.HBox([self.previous_next_segment, prev_description_button, next_description_button]), self.description, self.new_text_field, widgets.HBox([go_back_button, delete_button, set_new_text_button, play_audio_button]), save_button, self.category_dropdown, self.category_text])
     
     def update_widgets(self):
         self.description.value = f"Start time: {self.current_segment.start_time} ID: {self.current_segment.id} / {len(self.segments)-1}"
         self.new_text_field.value = self.current_segment.text
+        self.category_dropdown.value = "Nicht ausgewählt"
+        self.category_text.value = ""
         if self.i < len(self.segments) - 1:
             self.description_i = self.i+1
             self.previous_next_segment.value = f"ID {self.description_i}: {self.segments[self.description_i].text}"
@@ -411,6 +423,8 @@ class Correct_Transcription_Interface():
     
     def _on_set_new_text_button_clicked(self, b):
         self.current_segment.replace_text(self.new_text_field.value)
+        category = self.get_category()
+        self.current_segment.add_category(category)
         self.count_up()
         self.update_current_segment()
         self.update_widgets()
@@ -422,3 +436,16 @@ class Correct_Transcription_Interface():
         self.trial.tasks_dataframe = self.trial.history.export_tasks()
         self.trial.tasks_dataframe.to_excel(self.trial.out_dir.joinpath(f"{time.strftime('%Y-%m-%d_%H.%M.%S', self.trial.end_struct_time)}_tasks.xlsx"))
         save_trial(self.trial)
+        
+    def get_category(self):
+        if not self.category_text.value:
+            if self.category_dropdown.value == "Nicht ausgewählt":
+                category = None
+            else:
+                category = self.category_dropdown.value
+        else:
+            category = self.category_text.value
+            if category not in self.coding_categories:
+                self.coding_categories.append(category)
+                self.category_dropdown.options = self.coding_categories
+        return category

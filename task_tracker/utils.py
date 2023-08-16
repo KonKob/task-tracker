@@ -2,9 +2,9 @@
 
 # %% auto 0
 __all__ = ['save_trial', 'load_trial', 'transcribe_audio_to_task', 'get_duration_in_s_from_timestamps', 'get_colors',
-           'create_cumulative_bar_plots', 'create_cumulative_tie_plots', 'create_cumulative_dataframe',
-           'create_timeline', 'create_cumulative_pie_plots_per_lane', 'create_cumulative_bar_plots_per_lane',
-           'get_number_of_columns']
+           'create_cumulative_bar_plots', 'create_histplot', 'create_cumulative_tie_plots',
+           'create_cumulative_dataframe', 'create_timeline', 'create_cumulative_pie_plots_per_lane',
+           'create_cumulative_bar_plots_per_lane', 'get_number_of_columns']
 
 # %% ../nbs/00_utils.ipynb 3
 import time
@@ -44,12 +44,12 @@ def load_trial(tasks_dir, saved_file=None):
             raise FileNotFoundError("No pickle file found in this directory!")
         else:
             pickle_files.sort()
-            with open(pickle_files[0], 'rb') as pickled_file:
+            with open(pickle_files[-1], 'rb') as pickled_file:
                 loaded_pickled_trial = pickle.load(pickled_file)
             loaded_trial = pickle.loads(loaded_pickled_trial)
     else:
-        if Path(saved_file).exists():
-            with open(saved_file, 'rb') as pickled_file:
+        if Path(tasks_dir).joinpath(saved_file).exists():
+            with open(Path(tasks_dir).joinpath(saved_file), 'rb') as pickled_file:
                 loaded_pickled_trial = pickle.load(pickled_file)
             loaded_trial = pickle.loads(loaded_pickled_trial)
         else:
@@ -104,6 +104,15 @@ def create_cumulative_bar_plots(d, task_names, colors, bar_height = 1):
     return fig
 
 # %% ../nbs/00_utils.ipynb 10
+def create_histplot(d):
+    fig = plt.figure(figsize = (15, 7))
+    sns.histplot(d, x="task", y="category", cbar=True, cbar_kws=dict(shrink=.75))
+    plt.xticks(rotation=90)
+    plt.tight_layout()
+    plt.close()
+    return fig
+
+# %% ../nbs/00_utils.ipynb 11
 def create_cumulative_tie_plots(d, task_names, colors, bar_height = 1):
     artist_dict = {}
 
@@ -117,7 +126,7 @@ def create_cumulative_tie_plots(d, task_names, colors, bar_height = 1):
     plt.close()
     return fig
 
-# %% ../nbs/00_utils.ipynb 11
+# %% ../nbs/00_utils.ipynb 12
 def create_cumulative_dataframe(d, task_names=None):
     pieces = {}
     task_names = d["task_name"].unique()
@@ -128,7 +137,7 @@ def create_cumulative_dataframe(d, task_names=None):
             pieces[task] = task_subset.sum()["duration_in_s"]
     return pd.DataFrame(pieces, index=["cumulative time [s]"])
 
-# %% ../nbs/00_utils.ipynb 12
+# %% ../nbs/00_utils.ipynb 13
 def create_timeline(d, task_names, colors, bar_height = 1):
     artist_dict = {}
 
@@ -151,7 +160,7 @@ def create_timeline(d, task_names, colors, bar_height = 1):
     plt.close()
     return fig
 
-# %% ../nbs/00_utils.ipynb 13
+# %% ../nbs/00_utils.ipynb 14
 def create_cumulative_pie_plots_per_lane(dataframe_per_subtasks):
     cols, rows = get_number_of_columns(len(dataframe_per_subtasks.columns))
     fig = plt.figure(figsize = (rows*6, 4*cols))
@@ -172,7 +181,7 @@ def create_cumulative_pie_plots_per_lane(dataframe_per_subtasks):
     plt.close()
     return fig
 
-# %% ../nbs/00_utils.ipynb 14
+# %% ../nbs/00_utils.ipynb 15
 def create_cumulative_bar_plots_per_lane(dataframe_per_subtasks):
     cols, rows = get_number_of_columns(len(dataframe_per_subtasks.columns))
     
@@ -193,7 +202,7 @@ def create_cumulative_bar_plots_per_lane(dataframe_per_subtasks):
     plt.close()
     return fig
 
-# %% ../nbs/00_utils.ipynb 15
+# %% ../nbs/00_utils.ipynb 16
 def get_number_of_columns(columns, plots_in_one_row = 4):
     min_cols = columns//plots_in_one_row
     if columns%plots_in_one_row != 0:

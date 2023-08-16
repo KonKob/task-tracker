@@ -9,6 +9,7 @@ import datetime
 from typing import List
 from pathlib import Path
 import warnings
+import itertools as it
 
 import pandas as pd
 import seaborn as sns
@@ -18,7 +19,7 @@ import numpy as np
 import speech_recognition as sr
 import sounddevice as sd
 
-from .utils import get_duration_in_s_from_timestamps, transcribe_audio_to_task, create_cumulative_bar_plots, create_timeline, create_cumulative_tie_plots, create_cumulative_dataframe, save_trial, create_cumulative_pie_plots_per_lane, create_cumulative_bar_plots_per_lane, get_colors
+from .utils import get_duration_in_s_from_timestamps, transcribe_audio_to_task, create_cumulative_bar_plots, create_timeline, create_cumulative_tie_plots, create_cumulative_dataframe, save_trial, create_cumulative_pie_plots_per_lane, create_cumulative_bar_plots_per_lane, get_colors, create_histplot
 
 # %% ../nbs/01_trial_components.ipynb 4
 class Proband():
@@ -87,6 +88,13 @@ class Trial():
         save_trial(self)
         
         return self.tasks_dataframe, self.cum_d, self.dataframe_per_subtasks, self.plots, self.subtask_plots, self.metadata_df
+    
+    def export_problems(self):
+        self.history.export_problems()
+        self.history.category_dataframe.to_excel(self.out_dir.joinpath("problems_categories.xlsx"))
+        fig = create_histplot(self.history.category_dataframe)
+        fig.savefig(self.out_dir.joinpath("histplot_categories_tasks.png"))
+        return self.history.category_dataframe, fig
         
     def export_tasks(self):
         """
@@ -213,6 +221,7 @@ class Task():
         self.pauses = []
         self.pause = None
         self.description = {}
+        self.categories = {"start_time": [], "text": [], "categories": [], "task": [], "proband": []}
     
     def start(self):
         if not self.running:
@@ -384,6 +393,24 @@ class Task_History():
         return self.dataframe
     
     
+    def export_problems(self):
+        """
+        Creates a dataframe from all coded categories.
+        """
+        self.category_dataframe = pd.DataFrame()
+        tasks = []
+        for lane in self.tasks:
+            for task in self.tasks[lane]:
+                if type(task) == Task and hasattr(task, "categories"):
+                    tasks.append(task)
+        self.category_dataframe["task"] = list(it.chain(*[task.categories["task"] for task in tasks]))
+        self.category_dataframe["start_time"] = list(it.chain(*[task.categories["start_time"] for task in tasks]))
+        self.category_dataframe["category"] = list(it.chain(*[task.categories["categories"] for task in tasks]))
+        self.category_dataframe["text"] = list(it.chain(*[task.categories["text"] for task in tasks]))
+        self.category_dataframe["proband"] = list(it.chain(*[task.categories["proband"] for task in tasks]))
+        return self.category_dataframe
+    
+    
     def _create_tasks_dict(self, task_dict):
         tasks = {"Pause": []}
         if type(task_dict) == dict:
@@ -440,3 +467,16 @@ class Segment():
         self.trial.audio_record.transcription["text"]=self.trial.audio_record.transcription["text"].replace(self.text, "")
         self.text = ""
         self.checked = True
+        
+    def add_category(self, category):
+        for task in self.tasks:
+            if not hasattr(task, "categories"):
+                task.categories = {"start_time": [], "text": [], "categories": [], "task": [], "proband": []}
+            if category != None:
+                if self.start_time not in task.categories["start_time"]:
+                    # testen, dass mna nur eine kategorie hizufügen kann!
+                    task.categories["start_time"].append(self.start_time)
+                    task.categories["text"].append(self.text)
+                    task.categories["categories"].append(category)
+                    task.categories["task"].append(task.task_name)
+                    task.categories["proband"].append(self.trial.proband.proband_ID)
