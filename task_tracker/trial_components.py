@@ -17,7 +17,6 @@ import matplotlib.pyplot as plt
 from scipy.io.wavfile import write
 import numpy as np
 import speech_recognition as sr
-import sounddevice as sd
 
 from .utils import get_duration_in_s_from_timestamps, transcribe_audio_to_task, create_cumulative_bar_plots, create_timeline, create_cumulative_tie_plots, create_cumulative_dataframe, save_trial, create_cumulative_pie_plots_per_lane, create_cumulative_bar_plots_per_lane, get_colors, create_histplot
 
@@ -446,6 +445,7 @@ class Segment():
         return matching_tasks
         
     def play_segment(self):
+        import sounddevice as sd
         sd.play(self.array_slice)
         
     def replace_text(self, new_text):
