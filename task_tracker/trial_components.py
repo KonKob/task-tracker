@@ -344,6 +344,7 @@ class Audio_Record():
             y = (np.iinfo(np.int32).max * (self.recording/np.abs(self.recording).max())).astype(np.int32)
             write(self.filename, self.freq, y)
             self.running = False
+            delattr(self, "recording")
             
     def transcribe_audio(self):
         r = sr.Recognizer()
