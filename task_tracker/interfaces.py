@@ -479,8 +479,8 @@ class Correct_Transcription_Interface():
                             print(task.categories)
                             
         self.trial.tasks_dataframe = self.trial.history.export_tasks()
-        #self.trial.tasks_dataframe.to_excel(self.trial.out_dir.joinpath(f"{time.strftime('%Y-%m-%d_%H.%M.%S', self.trial.end_struct_time)}_tasks.xlsx"))
-        #save_trial(self.trial)
+        self.trial.tasks_dataframe.to_excel(self.trial.out_dir.joinpath(f"{time.strftime('%Y-%m-%d_%H.%M.%S', self.trial.end_struct_time)}_tasks.xlsx"))
+        save_trial(self.trial)
         
     def get_category(self):
         if self.select_category_dropdown.value != "Nicht ausgewählt":
