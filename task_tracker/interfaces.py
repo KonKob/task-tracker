@@ -338,7 +338,7 @@ class Correct_Transcription_Interface():
         self.trial = trial
         samplerate, array = read(trial.audio_record.filename)
         self.coding_categories = ["Nicht ausgewählt"] + coding_categories
-        self.segments = [Segment(start_time=segment["start"], end_time=segment["end"], text=segment["text"], ide=segment["id"], array_slice=array[int(segment["start"]*samplerate) : int(segment["end"]*samplerate)], tasks=trial.history.tasks, trial=self.trial) for segment in trial.audio_record.transcription["segments"] if segment["text"]]
+        self.segments = [Segment(start_time=segment["start"], end_time=segment["end"], text=segment["text"], ide=i, array_slice=array[int(segment["start"]*samplerate) : int(segment["end"]*samplerate)], tasks=trial.history.tasks, trial=self.trial) for i, segment in enumerate(trial.audio_record.transcription["segments"]) if segment["text"]]
         added_descriptions = [segment.text for segment in self.segments]
         for lane in trial.history.tasks:
             for task in trial.history.tasks[lane]:
@@ -381,7 +381,7 @@ class Correct_Transcription_Interface():
         select_category = widgets.VBox([self.select_category_dropdown, update_problem_text_button, self.problem_text])
         
         category_tab = widgets.Tab([new_category, select_category])
-        category_tab.titles = ["Add to new problem", "Select existing problem"]
+        category_tab.titles = ["Add to new category", "Select existing category"]
         
         self.new_text_field = widgets.Textarea(description="Enter new text here:", value=self.current_segment.text, style = {'description_width': 'initial', "font_size": "25px"})
         self.new_text_field.layout.width = "100%"
@@ -389,7 +389,7 @@ class Correct_Transcription_Interface():
         self.description = widgets.Label(f"Start time: {self.current_segment.start_time} ID: {self.current_segment.id} / {len(self.segments)-1}", style = {'description_width': 'initial', "font_size": "25px"})
         self.previous_next_segment = widgets.Label(f"ID {self.i+1}: {self.segments[self.i+1].text}", style = {'description_width': 'initial'})
         
-        return widgets.VBox([widgets.HBox([self.previous_next_segment, prev_description_button, next_description_button]), self.description, self.new_text_field, widgets.HBox([go_back_button, delete_button, set_new_text_button, play_audio_button]), save_button, category_tab])
+        return widgets.VBox([widgets.HBox([prev_description_button, next_description_button, self.previous_next_segment]), self.description, self.new_text_field, widgets.HBox([go_back_button, delete_button, set_new_text_button, play_audio_button]), save_button, category_tab])
     
     
     def _on_update_problem_text_button_clicked(self, b):
@@ -402,6 +402,7 @@ class Correct_Transcription_Interface():
         self.category_dropdown.value = "Nicht ausgewählt"
         self.select_category_dropdown.value = "Nicht ausgewählt"
         self.category_text.value = ""
+        self.problem_text.value = ""
         if self.i < len(self.segments) - 1:
             self.description_i = self.i+1
             self.previous_next_segment.value = f"ID {self.description_i}: {self.segments[self.description_i].text}"
@@ -445,7 +446,6 @@ class Correct_Transcription_Interface():
     def _on_set_new_text_button_clicked(self, b):
         self.current_segment.replace_text(self.new_text_field.value)
         category, category_num = self.get_category()
-        self.current_segment.add_category(category)
         if category is not None:
             if (category, category_num) not in self.coded_categories:
                 self.coded_categories[(category, category_num)] = Coding_Category(self.current_segment, category)
@@ -465,18 +465,16 @@ class Correct_Transcription_Interface():
                 if type(task)==Task:
                     for key in self.coded_categories:
                         category = self.coded_categories[key]
-                        print("y")
-                        if (category.start_time > task.start_time and category.start_time < task.end_time) or (category.start_time < task.start_time and category.end_time > task.start_time):
-                            print(task.categories)
-                            #if not hasattr(task, "categories"):
-                            task.categories = {"start_time": [], "text": [], "categories": [], "task": [], "proband": []}
-                            if category.start_time not in task.categories["start_time"]:
-                                task.categories["start_time"].append(category.start_time)
-                                task.categories["text"].append(category.text)
-                                task.categories["categories"].append(category.category)
-                                task.categories["task"].append(task.task_name)
-                                task.categories["proband"].append(self.trial.proband.proband_ID)
-                            print(task.categories)
+                        for segment in category.segments:
+                            if (segment.start_time > task.start_time and segment.start_time < task.end_time) or (segment.start_time < task.start_time and segment.end_time > task.start_time):
+                                if not hasattr(task, "categories"):
+                                    task.categories = {"start_time": [], "text": [], "categories": [], "task": [], "proband": []}
+                                if category.start_time not in task.categories["start_time"]:
+                                    task.categories["start_time"].append(category.start_time)
+                                    task.categories["text"].append(category.text)
+                                    task.categories["categories"].append(category.category)
+                                    task.categories["task"].append(task.task_name)
+                                    task.categories["proband"].append(self.trial.proband.proband_ID)
                             
         self.trial.tasks_dataframe = self.trial.history.export_tasks()
         self.trial.tasks_dataframe.to_excel(self.trial.out_dir.joinpath(f"{time.strftime('%Y-%m-%d_%H.%M.%S', self.trial.end_struct_time)}_tasks.xlsx"))
