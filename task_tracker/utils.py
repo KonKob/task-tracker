@@ -95,7 +95,7 @@ def create_cumulative_bar_plots(d, task_names, colors, bar_height = 1):
     for task in task_names:
         if task != "Pause":
             task_subset = d.loc[d["task_name"]==task, :]
-            height = task_subset.sum()["duration_in_s"]
+            height = task_subset.sum(numeric_only = True)["duration_in_s"]
             plt.bar(task, height, color=colors[task])
     ax.set_ylabel("cumulative time [s]")
     ax.set_xlabel("tasks")
@@ -121,7 +121,7 @@ def create_cumulative_tie_plots(d, task_names, colors, bar_height = 1):
     for task in task_names:
         if task != "Pause":
             task_subset = d.loc[d["task_name"]==task, :]
-            pieces[task] = task_subset.sum()["duration_in_s"]
+            pieces[task] = task_subset.sum(numeric_only = True)["duration_in_s"]
     plt.pie(pieces.values(), labels = [f"{key}\n{pieces[key].round(2)}s" for key in pieces],  colors=colors.values()) #, explode = [0.1]*len(pieces),
     plt.close()
     return fig
@@ -134,7 +134,7 @@ def create_cumulative_dataframe(d, task_names=None):
     for task in task_names:
         if task != "Pause":
             task_subset = d.loc[d["task_name"]==task, :]
-            pieces[task] = task_subset.sum()["duration_in_s"]
+            pieces[task] = task_subset.sum(numeric_only = True)["duration_in_s"]
     return pd.DataFrame(pieces, index=["cumulative time [s]"])
 
 # %% ../nbs/00_utils.ipynb 13
