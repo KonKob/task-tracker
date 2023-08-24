@@ -75,11 +75,11 @@ class Trial():
         
         save_trial(self)
         
-    def export_results(self, model="base"):
+    def export_results(self, model="base", transcribe=True):
         """
         Wrapper function. Executes all export options.
         """
-        self.export_tasks(model=model)
+        self.export_tasks(model=model, transcribe=transcribe)
         self.export_tasks_per_subtasks()
         self.export_proband_information()
 
@@ -92,13 +92,15 @@ class Trial():
         self.history.category_dataframe.to_excel(self.out_dir.joinpath("problems_categories.xlsx"))
         fig = create_histplot(self.history.category_dataframe)
         fig.savefig(self.out_dir.joinpath("histplot_categories_tasks.png"))
+        save_trial(self)
         return self.history.category_dataframe, fig
         
-    def export_tasks(self, model="base"):
+    def export_tasks(self, model="base", transcribe=True):
         """
         Creates the dataframe with information per single task, the full cumulative dataframe and the timeline and the full cumulative plots and timeline.
         """
-        self._postprocess_tasks_and_descriptions(model=model)
+        if transcribe:
+            self._postprocess_tasks_and_descriptions(model=model)
         self.tasks_dataframe = self.history.export_tasks()
         self.tasks_dataframe.to_excel(self.out_dir.joinpath(f"tasks.xlsx"))
 
@@ -195,8 +197,9 @@ class Trial():
             for task in self.history.tasks[lane]:
                 if type(task)==Task:
                     for segment in self.audio_record.transcription["segments"]:
-                        if (segment["start"] > task.start_time and segment["start"] < task.end_time) or (segment["start"] < task.start_time and segment["end"] > task.start_time):
-                            task.add_description(segment["text"], segment["start"])
+                        if segment["no_speech_prob"] < 0.85:
+                            if (segment["start"] > task.start_time and segment["start"] < task.end_time) or (segment["start"] < task.start_time and segment["end"] > task.start_time):
+                                task.add_description(segment["text"], segment["start"])
                     
 
 # %% ../nbs/01_trial_components.ipynb 6
@@ -322,6 +325,7 @@ class Audio_Record():
         self.filename = None
         self.recording = np.array([])
         self.running = False
+        self.transcription = {}
     
     def start(self):
         if not self.running:
@@ -400,7 +404,7 @@ class Task_History():
         tasks = []
         for lane in self.tasks:
             for task in self.tasks[lane]:
-                if type(task) == Task and hasattr(task, "categories"):
+                if type(task) != Pause and hasattr(task, "categories"):
                     tasks.append(task)
         self.category_dataframe["task"] = list(it.chain(*[task.categories["task"] for task in tasks]))
         self.category_dataframe["start_time"] = list(it.chain(*[task.categories["start_time"] for task in tasks]))
@@ -449,20 +453,22 @@ class Segment():
     def replace_text(self, new_text):
         for task in self.tasks:
             task.description[self.start_time] = new_text
-        for segment in self.trial.audio_record.transcription["segments"]:
-            if segment["text"] == self.text:
-                segment["text"] = new_text
-        self.trial.audio_record.transcription["text"]=self.trial.audio_record.transcription["text"].replace(self.text, new_text)
+        if self.trial.audio_record.transcription:
+            for segment in self.trial.audio_record.transcription["segments"]:
+                if segment["text"] == self.text:
+                    segment["text"] = new_text
+            self.trial.audio_record.transcription["text"]=self.trial.audio_record.transcription["text"].replace(self.text, new_text)
         self.text = new_text
         
     def delete_text(self):
         for task in self.tasks:
             if self.start_time in task.description:
                 task.description.pop(self.start_time)
-        for segment in self.trial.audio_record.transcription["segments"]:
-            if segment["text"] == self.text:
-                segment["text"] = ""
-        self.trial.audio_record.transcription["text"]=self.trial.audio_record.transcription["text"].replace(self.text, "")
+        if self.trial.audio_record.transcription:
+            for segment in self.trial.audio_record.transcription["segments"]:
+                if segment["text"] == self.text:
+                    segment["text"] = ""
+            self.trial.audio_record.transcription["text"]=self.trial.audio_record.transcription["text"].replace(self.text, "")
         self.text = ""
 
 # %% ../nbs/01_trial_components.ipynb 11

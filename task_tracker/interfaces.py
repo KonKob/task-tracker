@@ -175,7 +175,7 @@ class Main_Interface():
         return proband_button
     
     def _on_proband_button_clicked(self, b):
-        self.proband_interface.export_values_to_proband(self.trial.proband)
+        self.proband_interface.export_values_to_proband(self.trial)
         b.description = "Update proband information"
     
     def _on_pause_button_clicked(self, b):
@@ -224,9 +224,10 @@ class Proband_Interface():
             hbox_elements.append(widgets.HBox(list(widget_list.values())[(n_in_one_row*(i-1)):(n_in_one_row*i)]))
         return widgets.VBox(hbox_elements)
     
-    def export_values_to_proband(self, proband):
+    def export_values_to_proband(self, trial):
         for widget in self.widget_dict:
-            proband.set_metadata(self.widget_dict[widget].value, widget)
+            trial.proband.set_metadata(self.widget_dict[widget].value, widget)
+        save_trial(trial)
 
 # %% ../nbs/02_interfaces.ipynb 6
 class Sub_Interface():
@@ -338,8 +339,12 @@ class Correct_Transcription_Interface():
         self.trial = trial
         samplerate, array = read(trial.audio_record.filename)
         self.coding_categories = ["Nicht ausgewählt"] + coding_categories
-        self.segments = [Segment(start_time=segment["start"], end_time=segment["end"], text=segment["text"], ide=i, array_slice=array[int(segment["start"]*samplerate) : int(segment["end"]*samplerate)], tasks=trial.history.tasks, trial=self.trial) for i, segment in enumerate(trial.audio_record.transcription["segments"]) if segment["text"]]
-        added_descriptions = [segment.text for segment in self.segments]
+        if self.trial.audio_record.transcription:
+            self.segments = [Segment(start_time=segment["start"], end_time=segment["end"], text=segment["text"], ide=i, array_slice=array[int(segment["start"]*samplerate) : int(segment["end"]*samplerate)], tasks=trial.history.tasks, trial=self.trial) for i, segment in enumerate(trial.audio_record.transcription["segments"]) if segment["text"] and segment["no_speech_prob"] < 0.85]
+            added_descriptions = [segment.text for segment in self.segments]
+        else:
+            self.segments = []
+            added_descriptions = []
         for lane in trial.history.tasks:
             for task in trial.history.tasks[lane]:
                 for start_time in task.description:
