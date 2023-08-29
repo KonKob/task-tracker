@@ -32,8 +32,8 @@ class Main_Interface():
         export_proband_button = self._create_proband_export_button()
         start_trial_button = self._create_start_trial_button()
         self.description_task_dropdown, add_description_button, self.description_field, self.descriptions_dropdown = self._create_description_widgets(trial.descriptions_preset)
-        self.current_status, self.graphical_output, update_status = self._create_trial_overview()
-        self.main_interface = self._create_main_interface(self.pause_button, export_proband_button, start_trial_button, self.description_task_dropdown, add_description_button, self.description_field, self.descriptions_dropdown, self.current_status, self.graphical_output, update_status)
+        self.current_status, self.graphical_output, update_status, start_time = self._create_trial_overview()
+        self.main_interface = self._create_main_interface(self.pause_button, export_proband_button, start_trial_button, self.description_task_dropdown, add_description_button, self.description_field, self.descriptions_dropdown, self.current_status, self.graphical_output, update_status, start_time)
         self.gui = self._merge_interfaces_into_gui(self.interfaces, self.main_interface, self.proband_interface)
         self.all_children = self.gui.children
         self.all_titles = self.gui.titles
@@ -61,6 +61,7 @@ class Main_Interface():
             print("You didn't select a task!")
     
     def _on_update_status_button_clicked(self, b):
+        self.start_time.value = f"Start time: {time.strftime('%Y-%m-%d_%H.%M.%S', self.trial.start_struct_time)}"
         d = self.trial.history.export_tasks()
         
         task_names = d["task_name"].unique()
@@ -83,7 +84,8 @@ class Main_Interface():
         layout = widgets.Layout(width="100%", height="100px")
         update_button = widgets.Button(description="Update trial overview", icon = "refresh", layout=layout, style={"font_size": "15px"})
         update_button.on_click(self._on_update_status_button_clicked)
-        return current_status, graphical_output, update_button  
+        self.start_time = widgets.Label(f"Start time: ")
+        return current_status, graphical_output, update_button, self.start_time
         
     def _create_description_widgets(self, descriptions_preset):
         description_task_dropdown = widgets.Dropdown(description="Select task", style = {'description_width': 'initial'})
@@ -147,8 +149,8 @@ class Main_Interface():
             interfaces = {task: Sub_Interface(tasks[task], self.trial, lane=task) for task in tasks}
         return interfaces
     
-    def _create_main_interface(self, pause_button, export_proband_button, start_trial_button, description_task_dropdown, add_description_button, description_field, descriptions_dropdown, current_status, graphical_output, update_status):
-        status = widgets.VBox([current_status, graphical_output, update_status], layout=widgets.Layout(width="50%", height="100%", border='solid thin', margin="5px", align_items = "center"))
+    def _create_main_interface(self, pause_button, export_proband_button, start_trial_button, description_task_dropdown, add_description_button, description_field, descriptions_dropdown, current_status, graphical_output, update_status, start_time):
+        status = widgets.VBox([start_time, current_status, graphical_output, update_status], layout=widgets.Layout(width="50%", height="100%", border='solid thin', margin="5px", align_items = "center"))
         buttons = widgets.VBox([pause_button, export_proband_button, start_trial_button], layout=widgets.Layout(width="25%", height="100%", border='solid thin', margin="5px", align_items = "center"))
         descriptions = widgets.VBox([description_task_dropdown, description_field, descriptions_dropdown, add_description_button], layout=widgets.Layout(width="25%", height="100%", border='solid thin', margin="5px", align_items = "center"))
         return widgets.HBox([buttons, descriptions, status])
@@ -449,14 +451,17 @@ class Correct_Transcription_Interface():
         self.update_widgets()
     
     def _on_set_new_text_button_clicked(self, b):
-        self.current_segment.replace_text(self.new_text_field.value)
-        category, category_num = self.get_category()
-        if category is not None:
-            if (category, category_num) not in self.coded_categories:
-                self.coded_categories[(category, category_num)] = Coding_Category(self.current_segment, category)
-                self.select_category_dropdown.options = ["Nicht ausgewählt"] + list(self.coded_categories.keys())
-            else:
-                self.coded_categories[(category, category_num)].add_segment(self.current_segment)
+        if not self.current_segment.added_to_category:
+            self.current_segment.replace_text(self.new_text_field.value)
+            category, category_num = self.get_category()
+            if category is not None:
+                if (category, category_num) not in self.coded_categories:
+                    self.coded_categories[(category, category_num)] = Coding_Category(self.current_segment, category)
+                    self.select_category_dropdown.options = ["Nicht ausgewählt"] + list(self.coded_categories.keys())
+                else:
+                    self.coded_categories[(category, category_num)].add_segment(self.current_segment)
+        else:
+            print("Segment was already edited and added to a category. Adding a segment to a category twice is not supported!")
         self.count_up()
         self.update_current_segment()
         self.update_widgets()
@@ -502,4 +507,6 @@ class Correct_Transcription_Interface():
                     self.coding_categories.append(category)
                     self.category_dropdown.options = self.coding_categories
                 category_num = len(self.coded_categories) + 1
+        if category is not None:
+            self.current_segment.added_to_category = True
         return category, category_num

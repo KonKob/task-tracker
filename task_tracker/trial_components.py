@@ -47,8 +47,11 @@ class Trial():
         self.user_ID = user_ID
         self.task_number = 0
         self.start_time = None
+        self.end_time = None
         self.out_dir = None
         self.started = False
+        self.start_struct_time = None
+        self.end_struct_time = None
         self.colors = colors
         self.descriptions_preset = descriptions_preset
         if target_dir is None or not target_dir.exists():
@@ -404,7 +407,7 @@ class Task_History():
         tasks = []
         for lane in self.tasks:
             for task in self.tasks[lane]:
-                if type(task) != Pause and hasattr(task, "categories"):
+                if type(task) == Task and hasattr(task, "categories"):
                     tasks.append(task)
         self.category_dataframe["task"] = list(it.chain(*[task.categories["task"] for task in tasks]))
         self.category_dataframe["start_time"] = list(it.chain(*[task.categories["start_time"] for task in tasks]))
@@ -436,6 +439,7 @@ class Segment():
         self.array_slice = array_slice
         self.text = text
         self.tasks = self._find_tasks(tasks)
+        self.added_to_category = False
         
     def _find_tasks(self, all_tasks):
         matching_tasks = []
