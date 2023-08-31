@@ -108,6 +108,7 @@ class Main_Interface():
             start_button.style.button_color = "firebrick"
             self.pause_button.disabled = True
         start_button.on_click(self._on_start_button_clicked)
+        self.record_audio_box = widgets.Checkbox(value=True, description='Record audio')
         return start_button
     
     def _on_start_button_clicked(self, b):
@@ -115,8 +116,9 @@ class Main_Interface():
             self.gui.children = self.all_children
             self.gui.titles = self.all_titles
             self.trial.set_start_time()
-            if not self.trial.audio_record.running:
+            if not self.trial.audio_record.running and self.record_audio_box.value:
                 self.trial.audio_record.start()
+            self.record_audio_box.disabled = True
             b.style.button_color = "firebrick"
             b.description = "End trial"
             self.pause_button.disabled = False

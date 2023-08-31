@@ -67,14 +67,14 @@ class Trial():
     def set_start_time(self, overwrite=False):
         if self.start_time is None and not overwrite:
             self.start_time = round(time.time(), 4)
-            self.start_struct_time = time.gmtime()
+            self.start_struct_time = time.localtime()
         self.out_dir = self.target_dir.joinpath(f"{time.strftime('%Y-%m-%d_%H.%M.%S', self.start_struct_time)}_{self.proband.proband_ID}_{self.user_ID}/")
         self.started = True
         Path.mkdir(self.out_dir)
         
     def end_trial(self):
         self.end_time = round(time.time(), 4)
-        self.end_struct_time = time.gmtime()
+        self.end_struct_time = time.localtime()
         
         save_trial(self)
         
