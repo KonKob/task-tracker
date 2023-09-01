@@ -155,13 +155,15 @@ class Trial():
                     for sub_lane in self.history.tasks:
                         if sub_lane != lane:
                             for subtask in self.history.tasks[sub_lane]:
-                                
-                                if subtask.start_time < end and subtask.end_time > start:
-                                    duration = subtask.calculate_duration(start, end)
-                                    if subtask.task_name not in tasks[task.task_name]:
-                                        tasks[task.task_name][subtask.task_name] = duration
-                                    else:
-                                        tasks[task.task_name][subtask.task_name] += duration
+                                if subtask.task_name != "Pause":
+                                    if subtask.start_time < end and subtask.end_time > start:
+                                        duration = task.calculate_duration(subtask.start_time, subtask.end_time)
+                                        if duration > task.duration_in_s:
+                                            duration = task.duration_in_s
+                                        if subtask.task_name not in tasks[task.task_name]:
+                                            tasks[task.task_name][subtask.task_name] = duration
+                                        else:
+                                            tasks[task.task_name][subtask.task_name] += duration
 
         self.dataframe_per_subtasks = pd.DataFrame(tasks)
         self.dataframe_per_subtasks.to_excel(self.out_dir.joinpath(f"subtasks_per_tasks.xlsx"))
@@ -261,9 +263,9 @@ class Task():
         else:
             duration = get_duration_in_s_from_timestamps(start_time, end_time)
             for pause in self.pauses:
-                if pause.start_time < end_time and pause.end_time > start_time:
+                if pause.start_time <= end_time and pause.end_time >= start_time:
                     duration -= pause.calculate_duration(start_time, end_time)
-        
+                    
         return duration
     
     def pause_end(self):
