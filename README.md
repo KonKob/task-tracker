@@ -4,12 +4,10 @@
 
 ## Install
 
-Currently, task-tracker is not available on pip or conda. It will be
-accessible via the command below after release, whenever a stable
-version is created.
+Task-tracker is available on pip!
 
 ``` sh
-pip install task_tracker
+pip install task-tracking==0.0.2
 ```
 
 ## How to use
