@@ -24,17 +24,16 @@ class Main_Interface():
     Contains a landing page, several `Sub_Interface`objects and the `Proband_Interface`.
     """
     def __init__(self, trial):
-        self.break_all = False
+        self.all_paused = False
         self.trial = trial
         self.interfaces = self._create_sub_interfaces(self.trial.task_dict)
-        self.break_button = self._create_break_button()
+        self.pause_button = self._create_pause_button()
         self.proband_interface = self._create_proband_interface(trial.demographic_dict)
         export_proband_button = self._create_proband_export_button()
         start_trial_button = self._create_start_trial_button()
         self.description_task_dropdown, add_description_button, self.description_field, self.descriptions_dropdown = self._create_description_widgets(trial.descriptions_preset)
         self.current_status, self.graphical_output, update_status, start_time = self._create_trial_overview()
-        widget_dict = {"break_button": self.break_button, "export_proband_button": export_proband_button, "start_trial_button": start_trial_button, "description_task_dropdown": self.description_task_dropdown, "add_description_button": add_description_button, "description_field": self.description_field, "descriptions_dropdown": self.descriptions_dropdown, "current_status": self.current_status, "graphical_output": self.graphical_output, "update_status": update_status, "start_time": start_time}
-        self.main_interface = self._create_main_interface(widget_dict)
+        self.main_interface = self._create_main_interface(self.pause_button, export_proband_button, start_trial_button, self.description_task_dropdown, add_description_button, self.description_field, self.descriptions_dropdown, self.current_status, self.graphical_output, update_status, start_time)
         self.gui = self._merge_interfaces_into_gui(self.interfaces, self.main_interface, self.proband_interface)
         self.all_children = self.gui.children
         self.all_titles = self.gui.titles
@@ -50,12 +49,12 @@ class Main_Interface():
             for task in self.trial.history.current_tasks.values():
                 if task is not None:
                     if task.task_number == int(task_number):
-                        task.add_description(self.description_field.value + self.descriptions_dropdown.value, round(task.start_time, 4)-self.trial.start_time)
+                        task.add_description(self.description_field.value + self.descriptions_dropdown.value, round(time.time(), 4)-self.trial.start_time)
             for lane in self.trial.history.tasks:
                 for task in self.trial.history.tasks[lane]:
                     if task is not None:
                         if task.task_number == int(task_number):
-                            task.add_description(self.description_field.value + self.descriptions_dropdown.value, round(task.start_time, 4)-self.trial.start_time)
+                            task.add_description(self.description_field.value + self.descriptions_dropdown.value, round(time.time(), 4)-self.trial.start_time)
             self.description_field.value = ""
             self.descriptions_dropdown.value = ""
         else:
@@ -70,7 +69,7 @@ class Main_Interface():
             if task_name not in self.trial.colors:
                 self.trial.colors[task_name] = sns.colors.xkcd_rgb["black"]
                 
-        fig = create_timeline(d=d, colors=self.trial.colors)
+        fig = create_timeline(d=d, task_names = d["task_name"].unique(), colors = self.trial.colors)
         filename = self.trial.out_dir.joinpath("timeline.png")
         fig.savefig(filename)
         file = open(filename, "rb")
@@ -107,7 +106,7 @@ class Main_Interface():
         else:
             start_button = widgets.Button(description="Trial ended", layout=layout, style={"font_size": "25px"}, disabled=True)
             start_button.style.button_color = "firebrick"
-            self.break_button.disabled = True
+            self.pause_button.disabled = True
         start_button.on_click(self._on_start_button_clicked)
         self.record_audio_box = widgets.Checkbox(value=True, description='Record audio')
         return start_button
@@ -122,7 +121,7 @@ class Main_Interface():
             self.record_audio_box.disabled = True
             b.style.button_color = "firebrick"
             b.description = "End trial"
-            self.break_button.disabled = False
+            self.pause_button.disabled = False
         else:
             if self.trial.audio_record.running:
                 self.trial.audio_record.end()
@@ -130,16 +129,16 @@ class Main_Interface():
             self.gui.titles = self.not_running_titles
             b.disabled = True
             b.description = "Trial ended"
-            self.break_button.disabled = True
-            self.break_button.disabled = True
+            self.pause_button.disabled = True
+            self.pause_button.disabled = True
             self.trial.end_trial()
             for lane in self.trial.history.current_tasks:
                     if self.trial.history.current_tasks[lane] is not None:
                         if self.trial.history.current_tasks[lane].running:
                             self.trial.history.current_tasks[lane].end()
                             self.trial.history.add_current_task_to_history(lane)
-                            for break_ in self.trial.history.current_tasks[lane].breaks:
-                                self.trial.history.add_break(break_)
+                            for pause in self.trial.history.current_tasks[lane].pauses:
+                                self.trial.history.add_pause(pause)
                         self.trial.history.current_tasks[lane] = None
         
     def _create_proband_interface(self, demographics):
@@ -152,10 +151,10 @@ class Main_Interface():
             interfaces = {task: Sub_Interface(tasks[task], self.trial, lane=task) for task in tasks}
         return interfaces
     
-    def _create_main_interface(self, widget_dict):
-        status = widgets.VBox([widget_dict["start_time"], widget_dict["current_status"], widget_dict["graphical_output"], widget_dict["update_status"]], layout=widgets.Layout(width="50%", height="100%", border='solid thin', margin="5px", align_items = "center"))
-        buttons = widgets.VBox([widget_dict["break_button"], widget_dict["export_proband_button"], widget_dict["start_trial_button"]], layout=widgets.Layout(width="25%", height="100%", border='solid thin', margin="5px", align_items = "center"))
-        descriptions = widgets.VBox([widget_dict["description_task_dropdown"], widget_dict["description_field"], widget_dict["descriptions_dropdown"], widget_dict["add_description_button"]], layout=widgets.Layout(width="25%", height="100%", border='solid thin', margin="5px", align_items = "center"))
+    def _create_main_interface(self, pause_button, export_proband_button, start_trial_button, description_task_dropdown, add_description_button, description_field, descriptions_dropdown, current_status, graphical_output, update_status, start_time):
+        status = widgets.VBox([start_time, current_status, graphical_output, update_status], layout=widgets.Layout(width="50%", height="100%", border='solid thin', margin="5px", align_items = "center"))
+        buttons = widgets.VBox([pause_button, export_proband_button, start_trial_button], layout=widgets.Layout(width="25%", height="100%", border='solid thin', margin="5px", align_items = "center"))
+        descriptions = widgets.VBox([description_task_dropdown, description_field, descriptions_dropdown, add_description_button], layout=widgets.Layout(width="25%", height="100%", border='solid thin', margin="5px", align_items = "center"))
         return widgets.HBox([buttons, descriptions, status])
     
     def _merge_interfaces_into_gui(self, interfaces, main_interface, proband_interface):
@@ -165,12 +164,12 @@ class Main_Interface():
         tab.titles = ["Main"] + list(interfaces.keys()) + ["Proband"]
         return tab
     
-    def _create_break_button(self):
+    def _create_pause_button(self):
         layout = widgets.Layout(width="100%", height="100px")
-        break_button = widgets.Button(description="Start break for all", layout=layout, style={"font_size": "25px"}, disabled=True)
-        break_button.style.button_color = "gold"
-        break_button.on_click(self._on_break_button_clicked)
-        return break_button
+        pause_button = widgets.Button(description="Start pause for all", layout=layout, style={"font_size": "25px"}, disabled=True)
+        pause_button.style.button_color = "gold"
+        pause_button.on_click(self._on_pause_button_clicked)
+        return pause_button
     
     def _create_proband_export_button(self):
         layout = widgets.Layout(width="100%", height="100px")
@@ -183,29 +182,29 @@ class Main_Interface():
         self.proband_interface.export_values_to_proband(self.trial)
         b.description = "Update proband information"
     
-    def _on_break_button_clicked(self, b):
-        if not self.break_all:
-            b.description = "End break for all"
+    def _on_pause_button_clicked(self, b):
+        if not self.all_paused:
+            b.description = "End pause for all"
             b.icon = "circle"
             b.style.button_color = "firebrick"
             for task in self.trial.history.current_tasks.values():
                 if task is not None:
                     if task.running:
-                        if not task.currently_break:
-                            task.break_start()
-            self.break_all = True
+                        if not task.currently_paused:
+                            task.pause_start()
+            self.all_paused = True
             self.gui.children = self.not_running_children
             self.gui.titles = self.not_running_titles
         else:
             for task in self.trial.history.current_tasks.values():
                 if task is not None:
                     if task.running:
-                        if task.currently_break: # if task was paused before the global break already, it is started again currently
-                            task.break_end()
-            b.description = "Start break for all"
+                        if task.currently_paused: # derzeit wird die pause gestoppt auch wenn schon vor der globalen pause pausiert war
+                            task.pause_end()
+            b.description = "Start pause for all"
             b.style.button_color = "gold"
             b.icon = ""
-            self.break_all = False
+            self.all_paused = False
             self.gui.children = self.all_children
             self.gui.titles = self.all_titles
 
@@ -243,15 +242,15 @@ class Sub_Interface():
         self.trial = trial
         self.n_in_one_row = 5
         self.buttons = self._create_task_buttons(tasks)
-        self.break_button = self._create_break_button()
+        self.pause_button = self._create_pause_button()
         self.lane = lane
         self.new_text = self._create_new_task_text()
-        self.interface = self._create_interface(self.buttons, self.new_text, self.break_button)
+        self.interface = self._create_interface(self.buttons, self.new_text, self.pause_button)
         self.trial.history.current_tasks[self.lane] = None
         
-    def _create_interface(self, buttons, text, break_):
+    def _create_interface(self, buttons, text, pause):
         tasks_vbox = self._arrange_widgets(list(self.buttons.values()), self.n_in_one_row)
-        return widgets.VBox([tasks_vbox, text, break_])
+        return widgets.VBox([tasks_vbox, text, pause])
         
     def _arrange_widgets(self, widget_list, n_in_one_row):
         hbox_elements = []
@@ -264,23 +263,23 @@ class Sub_Interface():
         task_buttons = {task: widgets.Button(description = task, layout=layout, style={"font_size": "15px"}) for task in tasks}
         for button in task_buttons.values():
             button.on_click(self._on_task_button_clicked)
-        task_buttons["Others"] = widgets.Button(description = "Other", layout=layout, style={"font_size": "15px"})
-        task_buttons["Others"].on_click(self._on_new_task_button_clicked)
-        task_buttons["Others"].style.button_color = "darkgray"
-        task_buttons["No task running"] = widgets.Button(description = "No task running", layout=layout, icon = "circle", style={"font_size": "15px"})
-        task_buttons["No task running"].style.button_color = "firebrick"
-        task_buttons["No task running"].on_click(self._on_end_task_no_new_task_button_clicked)
+        task_buttons["Sonstige"] = widgets.Button(description = "Other", layout=layout, style={"font_size": "15px"})
+        task_buttons["Sonstige"].on_click(self._on_new_task_button_clicked)
+        task_buttons["Sonstige"].style.button_color = "darkgray"
+        task_buttons["Keine neue Aufgabe"] = widgets.Button(description = "No task running", layout=layout, icon = "circle", style={"font_size": "15px"})
+        task_buttons["Keine neue Aufgabe"].style.button_color = "firebrick"
+        task_buttons["Keine neue Aufgabe"].on_click(self._on_end_task_no_new_task_button_clicked)
         return task_buttons
     
-    def _create_break_button(self):
+    def _create_pause_button(self):
         layout = widgets.Layout(width="100%", height="100px")
-        break_button = widgets.Button(description = "Start break", disabled = False, layout=layout, style={"font_size": "25px"})
-        break_button.on_click(self._on_break_button_clicked)
-        break_button.style.button_color = "gold"
-        return break_button
+        pause_button = widgets.Button(description = "Start pause", disabled = False, layout=layout, style={"font_size": "25px"})
+        pause_button.on_click(self._on_pause_button_clicked)
+        pause_button.style.button_color = "gold"
+        return pause_button
     
     def _on_new_task_button_clicked(self, b):
-        self.buttons["Others"].description = self.new_text.value
+        self.buttons["Sonstige"].description = self.new_text.value
         self._on_task_button_clicked(b)
         
     def _create_new_task_text(self):
@@ -292,42 +291,42 @@ class Sub_Interface():
     def _on_end_task_no_new_task_button_clicked(self, b):
         for button in self.buttons.values():
             button.icon = ""
-        self.break_button.icon = ""
+        self.pause_button.icon = ""
         if self.trial.history.current_tasks[self.lane] is not None:
             if self.trial.history.current_tasks[self.lane].running:
                 self.trial.history.current_tasks[self.lane].end()
-                self.break_button.description = "Start break"
+                self.pause_button.description = "Start pause"
                 self.trial.history.add_current_task_to_history(self.lane)
-                for break_ in self.trial.history.current_tasks[self.lane].breaks:
-                    self.trial.history.add_break(break_)
+                for pause in self.trial.history.current_tasks[self.lane].pauses:
+                    self.trial.history.add_pause(pause)
         self.trial.history.current_tasks[self.lane] = None
         b.icon = "circle"
         
-    def _on_break_button_clicked(self, b):
+    def _on_pause_button_clicked(self, b):
         if self.trial.history.current_tasks[self.lane] is not None:
-            if self.trial.history.current_tasks[self.lane].currently_break:
-                self.trial.history.current_tasks[self.lane].break_end()
-                self.break_button.description = "Start break"
-                self.break_button.icon = ""
+            if self.trial.history.current_tasks[self.lane].currently_paused:
+                self.trial.history.current_tasks[self.lane].pause_end()
+                self.pause_button.description = "Start pause"
+                self.pause_button.icon = ""
             else:
-                self.trial.history.current_tasks[self.lane].break_start()
-                self.break_button.description = "End break"
-                self.break_button.icon = "circle"
+                self.trial.history.current_tasks[self.lane].pause_start()
+                self.pause_button.description = "End pause"
+                self.pause_button.icon = "circle"
                 
         
     def _on_task_button_clicked(self, b):
         for button in self.buttons.values():
             button.icon = ""
-        self.break_button.icon = ""
+        self.pause_button.icon = ""
         if self.trial.start_time is None:
             self.trial.set_start_time()
         if self.trial.history.current_tasks[self.lane] is not None:
             if self.trial.history.current_tasks[self.lane].running:
                 self.trial.history.current_tasks[self.lane].end()
-                self.break_button.description = "Start break"
+                self.pause_button.description = "Start pause"
                 self.trial.history.add_current_task_to_history(self.lane)
-                for break_ in self.trial.history.current_tasks[self.lane].breaks:
-                    self.trial.history.add_break(break_)
+                for pause in self.trial.history.current_tasks[self.lane].pauses:
+                    self.trial.history.add_pause(pause)
         b.icon = "circle"
         self.trial.history.current_tasks[self.lane] = Task(task_number=self.trial.task_number, task_name = b.description, lane = self.lane, trial_start_time=self.trial.start_time)
         self.trial.history.current_tasks[self.lane].start()
@@ -343,7 +342,7 @@ class Correct_Transcription_Interface():
         self.coded_categories = {}
         self.trial = trial
         samplerate, array = read(trial.audio_record.filename)
-        self.coding_categories = ["Not selected"] + coding_categories
+        self.coding_categories = ["Nicht ausgewählt"] + coding_categories
         if self.trial.audio_record.transcription:
             self.segments = [Segment(start_time=segment["start"], end_time=segment["end"], text=segment["text"], ide=i, array_slice=array[int(segment["start"]*samplerate) : int(segment["end"]*samplerate)], tasks=trial.history.tasks, trial=self.trial) for i, segment in enumerate(trial.audio_record.transcription["segments"]) if segment["text"] and segment["no_speech_prob"] < 0.85]
             added_descriptions = [segment.text for segment in self.segments]
@@ -382,7 +381,7 @@ class Correct_Transcription_Interface():
         self.category_text = widgets.Text(description = "New category", style = {'description_width': 'initial'}, layout = widgets.Layout(width="100%", height="30px"))
         new_category = widgets.VBox([self.category_dropdown, self.category_text])
         
-        self.select_category_dropdown = widgets.Dropdown(options=["Not selected"], description = "Select Coding Categorie", style = {'description_width': 'initial'}, layout = widgets.Layout(width="100%", height="30px"))
+        self.select_category_dropdown = widgets.Dropdown(options=["Nicht ausgewählt"], description = "Select Coding Categorie", style = {'description_width': 'initial'}, layout = widgets.Layout(width="100%", height="30px"))
         update_problem_text_button = widgets.Button(description = "Update problem text")
         update_problem_text_button.on_click(self._on_update_problem_text_button_clicked)
         self.problem_text = widgets.Textarea(value="", description="Text of the currently selected existing problem", disabled=True, style = {'description_width': 'initial', "font_size": "25px"})
@@ -403,14 +402,14 @@ class Correct_Transcription_Interface():
     
     
     def _on_update_problem_text_button_clicked(self, b):
-        if self.select_category_dropdown.value != "Not selected":
+        if self.select_category_dropdown.value != "Nicht ausgewählt":
             self.problem_text.value = self.coded_categories[self.select_category_dropdown.value].text
     
     def update_widgets(self):
         self.description.value = f"Start time: {self.current_segment.start_time} ID: {self.current_segment.id} / {len(self.segments)-1}"
         self.new_text_field.value = self.current_segment.text
-        self.category_dropdown.value = "Not selected"
-        self.select_category_dropdown.value = "Not selected"
+        self.category_dropdown.value = "Nicht ausgewählt"
+        self.select_category_dropdown.value = "Nicht ausgewählt"
         self.category_text.value = ""
         self.problem_text.value = ""
         if self.i < len(self.segments) - 1:
@@ -460,7 +459,7 @@ class Correct_Transcription_Interface():
             if category is not None:
                 if (category, category_num) not in self.coded_categories:
                     self.coded_categories[(category, category_num)] = Coding_Category(self.current_segment, category)
-                    self.select_category_dropdown.options = ["Not selected"] + list(self.coded_categories.keys())
+                    self.select_category_dropdown.options = ["Nicht ausgewählt"] + list(self.coded_categories.keys())
                 else:
                     self.coded_categories[(category, category_num)].add_segment(self.current_segment)
         else:
@@ -494,11 +493,11 @@ class Correct_Transcription_Interface():
         save_trial(self.trial)
         
     def get_category(self):
-        if self.select_category_dropdown.value != "Not selected":
+        if self.select_category_dropdown.value != "Nicht ausgewählt":
             category, category_num = self.select_category_dropdown.value
         else:
             if not self.category_text.value:
-                if self.category_dropdown.value == "Not selected":
+                if self.category_dropdown.value == "Nicht ausgewählt":
                     category = None
                     category_num = None
                 else:

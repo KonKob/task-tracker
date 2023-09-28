@@ -88,12 +88,12 @@ def get_colors(task_names: List, palette_name="colorblind") -> Dict:
     return colors
 
 # %% ../nbs/00_utils.ipynb 9
-def create_cumulative_bar_plots(d, task_names, colors):
-    artist_dict = {"Break": None}
+def create_cumulative_bar_plots(d, task_names, colors, bar_height = 1):
+    artist_dict = {"Pause": None}
     
     fig, ax = plt.subplots()
     for task in task_names:
-        if task != "Break":
+        if task != "Pause":
             task_subset = d.loc[d["task_name"]==task, :]
             height = task_subset.sum(numeric_only = True)["duration_in_s"]
             plt.bar(task, height, color=colors[task])
@@ -119,7 +119,7 @@ def create_cumulative_tie_plots(d, task_names, colors, bar_height = 1):
     fig, ax = plt.subplots()
     pieces = {}
     for task in task_names:
-        if task != "Break":
+        if task != "Pause":
             task_subset = d.loc[d["task_name"]==task, :]
             pieces[task] = task_subset.sum(numeric_only = True)["duration_in_s"]
     plt.pie(pieces.values(), labels = [f"{key}\n{pieces[key].round(2)}s" for key in pieces],  colors=colors.values()) #, explode = [0.1]*len(pieces),
@@ -132,28 +132,28 @@ def create_cumulative_dataframe(d, task_names=None):
     task_names = d["task_name"].unique()
     
     for task in task_names:
-        if task != "Break":
+        if task != "Pause":
             task_subset = d.loc[d["task_name"]==task, :]
             pieces[task] = task_subset.sum(numeric_only = True)["duration_in_s"]
     return pd.DataFrame(pieces, index=["cumulative time [s]"])
 
 # %% ../nbs/00_utils.ipynb 13
-def create_timeline(d, colors, task_names, bar_height=1):
+def create_timeline(d, task_names, colors, bar_height = 1):
     artist_dict = {}
 
     fig, ax = plt.subplots()
     for task_number in d["task_number"].unique():
-        task = d.loc[(d["task_number"]==task_number) & (d["task_name"]!="Break"), :]
+        task = d.loc[(d["task_number"]==task_number) & (d["task_name"]!="Pause"), :]
         task_start_time = task.loc[: , "start_time"]
         task_duration = get_duration_in_s_from_timestamps(task.loc[: , "start_time"].values[0], task.loc[: , "end_time"].values[0])
         task_name = task.loc[: , "task_name"]
         lane = task.loc[: , "lane"]
         artist_dict[task_name.values[0]] = plt.barh(lane, task_duration, bar_height, left=task_start_time, color=colors[task_name.values[0]])
-        breaks = d.loc[(d["task_number"]==task_number) & (d["task_name"]=="Break"), :]
-        for break_ in breaks.index:
-            break_start_time = breaks.loc[break_ , "start_time"]
-            break_duration = breaks.loc[break_ , "duration_in_s"]
-            artist_dict["Break"] = plt.barh(lane, break_duration, bar_height, left=break_start_time, color = "grey", alpha = 0.5)
+        pauses = d.loc[(d["task_number"]==task_number) & (d["task_name"]=="Pause"), :]
+        for pause in pauses.index:
+            pause_start_time = pauses.loc[pause , "start_time"]
+            pause_duration = pauses.loc[pause , "duration_in_s"]
+            artist_dict["Pause"] = plt.barh(lane, pause_duration, bar_height, left=pause_start_time, color = "grey", alpha = 0.5)
     ax.set_xlabel("time [s]")
     ax.set_ylabel("Tasks")
     plt.legend(artist_dict.values(), artist_dict.keys())
