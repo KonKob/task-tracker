@@ -70,9 +70,9 @@ page](https://github.com/KonKob/task-tracker/blob/main/media/task_page.png?raw=t
 ### Exporting the results creates excel files.
 
 ``` python
-from task_tracker.utils import load_trial
-trial = load_trial("../test_data/2023-08-07_17.43.23_0000_Chef/")
-trial.tasks_dataframe.head()
+#from task_tracker.utils import load_trial
+#trial = load_trial("../test_data/2023-08-07_17.43.23_0000_Chef/")
+#trial.tasks_dataframe.head()
 ```
 
 <div>
