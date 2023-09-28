@@ -1,0 +1,44 @@
+[
+  {
+    "objectID": "trial_components.html",
+    "href": "trial_components.html",
+    "title": "trial components",
+    "section": "",
+    "text": "source\n\nProband\n\n Proband (proband_ID)\n\nStores metadata associated with the proband.\n\nsource\n\n\nTrial\n\n Trial (user_ID, task_dict, demographic_dict, target_dir=None,\n        proband_ID=None, colors=None, language='german',\n        descriptions_preset=[])\n\nThe main class used by task_tracker. Proband, Task_History, Audio_Record objects are stored here. Metadata such as user_ID, start_ and end_time are stored here. Main_Interface writes acquired information directly to this object.\n\nsource\n\n\nTask\n\n Task (task_number, task_name, lane, trial_start_time)\n\nThe syllables of task_tracker. Start-, end- time and Pause objects are stored here. Descriptions can be added to this object. The duration can be calculated substracting the breaks.\n\nsource\n\n\nPause\n\n Pause (task_number, task_name='Pause', lane='Tasks', trial_start_time=0)\n\nStores start- and end- time. The duration can be calculated substracting the breaks.\n\nsource\n\n\nAudio_Record\n\n Audio_Record (trial, channels=1, freq=44100, duration=10800)\n\nAudio is recorded via this class. The interaction with sounddevice is performed here. Per default, the recording can last no longer than 3 hours. However, the duration can be set individually.\n\nsource\n\n\nTask_History\n\n Task_History (task_dict)\n\nThe tasks are stored here. They can be exported as dataframe via Task_History.export_tasks.\n\nsource\n\n\nSegment\n\n Segment (start_time, end_time, text, ide, array_slice, tasks, trial)\n\nRepresentations of single segments transcribed from audio. Are used in Correct_Transcription_Interface.\n\nsource\n\n\nCoding_Category\n\n Coding_Category (segment, category)\n\nInitialize self. See help(type(self)) for accurate signature."
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "task-tracker",
+    "section": "",
+    "text": "Task-tracker is available on pip!\npip install task-tracking==0.0.2"
+  },
+  {
+    "objectID": "index.html#install",
+    "href": "index.html#install",
+    "title": "task-tracker",
+    "section": "",
+    "text": "Task-tracker is available on pip!\npip install task-tracking==0.0.2"
+  },
+  {
+    "objectID": "index.html#how-to-use",
+    "href": "index.html#how-to-use",
+    "title": "task-tracker",
+    "section": "How to use",
+    "text": "How to use\nExample on how to use task-tracker on a lasagne recipe.\n\n\n\n\n\n\nNote\n\n\n\nYou can find the notebook and the results of the lasagne recipe at https://github.com/KonKob/task-tracker/blob/main/test_data.\n\n\n\n\nThis is how the landing page looks like after completing a trial:\n\n\n\nlanding page\n\n\n\nWhenever the trial is started here, an audio recording is started, that can be transcribed after completion of the trial.\nAt the right you see the timeline of tasks over the session so far. You can update it at any time.\nIn the middle of the landing page, you can add a description manually to running or finished tasks.\nThe proband metadata can be saved at any time by clicking Export proband metadata.\nTo pause all tasks, you can click Start pause for all during a running trial.\n\n\n\nThe proband metadata can be entered in the following mask:\n\n\n\nproband metadata\n\n\n\n\nTasks, that you want to track, are shown in different tabs.\n\n\n\ntask page\n\n\n\nWhenever you click on a task, this task is started and another task running in this tab is ended. You can end a task by clicking No task running as well.\nIf you find, that you forgot a tasks, you can add it by entering the name in the grey line Other and then clicking the grey button Other.\nTo pause a task, just hit Start pause.\n\n\n\n\nExporting the results creates excel files.\n\n#from task_tracker.utils import load_trial\n#trial = load_trial(\"../test_data/2023-08-07_17.43.23_0000_Chef/\")\n#trial.tasks_dataframe.head()\n\n\n\n\n\n\n\n\nlane\nduration_in_s\ntask_number\ntask_name\nstart_time\nend_time\ndescription_0\n\n\n\n\n0\nKitchen appliances\n1.3528\n12\nPause\n203.6099\n204.9627\n220°C\n\n\n1\nKitchen appliances\n52.8952\n6\nStove\n89.5415\n142.4367\nNaN\n\n\n2\nKitchen appliances\n111.9687\n12\nOven\n142.4370\n255.7585\n220°C\n\n\n3\nIngredients\n28.0470\n0\nOnions\n10.3749\n38.4219\nNaN\n\n\n4\nIngredients\n19.8456\n2\nCarrots\n39.5850\n59.4306\nNaN\n\n\n\n\n\n\n\n\n\nFor visualization, several plots are created.\n\nThe cumulative duration spent in certain tasks can be shown as bar and tie plots.\n\n\n\ncumulative duration of tasks in trial\n\n\n\n\nIt can also be shown, how much time was spent in tasks running in parallel to other tasks.\n\n\n\ntie plot per task"
+  },
+  {
+    "objectID": "utils.html",
+    "href": "utils.html",
+    "title": "utils",
+    "section": "",
+    "text": "source\n\nsave_trial\n\n save_trial (trial)\n\nSaves a pickle file in the root dir of a Trial. This file can be loaded using load_trial.\n\nsource\n\n\nload_trial\n\n load_trial (tasks_dir, saved_file=None)\n\nLoads a Trial, that was saved as a pickle file before using save_trial and returns it. Requires the trials’ root_dir as argument.\n\nsource\n\n\ntranscribe_audio_to_task\n\n transcribe_audio_to_task (task, r, file, trial, language)\n\n\nsource\n\n\nget_duration_in_s_from_timestamps\n\n get_duration_in_s_from_timestamps (start_time_stamp, end_time_stamp=None)\n\n\nsource\n\n\nget_colors\n\n get_colors (task_names:List, palette_name='colorblind')\n\nAssigns a unique color to all tasks in task_names from the seaborn palette colorblind or if there are more than 20 tasks from husl.\n\nsource\n\n\ncreate_cumulative_bar_plots\n\n create_cumulative_bar_plots (d, task_names, colors, bar_height=1)\n\n\nsource\n\n\ncreate_histplot\n\n create_histplot (d)\n\n\nsource\n\n\ncreate_cumulative_tie_plots\n\n create_cumulative_tie_plots (d, task_names, colors, bar_height=1)\n\n\nsource\n\n\ncreate_cumulative_dataframe\n\n create_cumulative_dataframe (d, task_names=None)\n\n\nsource\n\n\ncreate_timeline\n\n create_timeline (d, task_names, colors, bar_height=1)\n\n\nsource\n\n\ncreate_cumulative_pie_plots_per_lane\n\n create_cumulative_pie_plots_per_lane (dataframe_per_subtasks)\n\n\nsource\n\n\ncreate_cumulative_bar_plots_per_lane\n\n create_cumulative_bar_plots_per_lane (dataframe_per_subtasks)\n\n\nsource\n\n\nget_number_of_columns\n\n get_number_of_columns (columns, plots_in_one_row=4)"
+  },
+  {
+    "objectID": "interfaces.html",
+    "href": "interfaces.html",
+    "title": "interfaces",
+    "section": "",
+    "text": "source\n\nMain_Interface\n\n Main_Interface (trial)\n\nThe main interface, with which the user interacts. Contains a landing page, several Sub_Interfaceobjects and the Proband_Interface.\n\nsource\n\n\nProband_Interface\n\n Proband_Interface (demographics, n_in_one_row=4)\n\nInterface to acquire metadata related to the proband. The metadata can be saved to the Proband object.\n\nsource\n\n\nSub_Interface\n\n Sub_Interface (tasks:List, trial:task_tracker.trial_components.Trial,\n                lane='Tasks')\n\nInterface to record Task-objects. Corresponds to one Tab in Main_Interface.\n\nsource\n\n\nCorrect_Transcription_Interface\n\n Correct_Transcription_Interface (trial, coding_categories=[])\n\nInterface to easily check and correct audio transcriptions."
+  }
+]
